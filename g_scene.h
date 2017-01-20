@@ -5,20 +5,20 @@
 
 namespace fg {
 
-	class FEMCADGEOMSHARED_EXPORT Scene {
+	class FEMCADGEOMSHARED_EXPORT Scene
+	{
 	protected:
 		static int ID;
 		friend class FEMCADGEOMSHARED_EXPORT IGeometry;
 		int id;
 		std::vector<std::unique_ptr<IGeometry>> geometry;
-		//std::vector<std::shared_ptr<ISetting>> settings;
 		std::vector<std::set<GHANDLE>> ownership;
 		TransformRoot root;
 	public:
 		bool isPrimitive;
-		SETTINGHANDLE defaultVertex;//VertexSetting defaultVertex;
-		SETTINGHANDLE defaultLine;//LineSetting defaultLine;
-		SETTINGHANDLE defaultCSG;//GeometrySetting defaultCSG;
+		SETTINGHANDLE defaultVertex;	//VertexSetting defaultVertex;
+		SETTINGHANDLE defaultLine;		//LineSetting defaultLine;
+		SETTINGHANDLE defaultCSG;		//GeometrySetting defaultCSG;
 		Scene();
 		void copy(Scene& s) const {} // TODO
 		TransformPtr getRootTransform() {
@@ -40,18 +40,6 @@ namespace fg {
 		void remove(GHANDLE object);
 
 		void merge(GHANDLE target, GHANDLE object);
-
-		//template<class T>
-		//SETTINGHANDLE addSetting(T& object) {
-		//	static_assert(std::is_base_of<ISetting, T>::value, "Can't add non ISetting type object");
-		//	for (size_t i = 0U; i<settings.size(); i++) {
-		//		if (*(settings[i].get()) == object) return settings[i]->getHandle();
-		//	}
-		//
-		//	settings.emplace_back(std::make_unique<T>(object));
-		//	settings.back()->setHandle(settings.size() - 1);
-		//	return settings.back()->getHandle();
-		//}
 
 		template<class T>
 		GHANDLE add(T&& object) {
@@ -102,10 +90,6 @@ namespace fg {
 			throw FGObjectNotFound();
 		}
 
-		//ISetting* get(SETTINGHANDLE& setting) {// const{
-		//	assert(setting < geometry.size());
-		//	return settings[setting].get();
-		//}
 		template<class G>
 		G& get(GHANDLE object) const {
 			//static_assert(std::is_base_of<IGeometry, G>::value, "Can't add non IGeometry type object");
@@ -149,21 +133,6 @@ namespace fg {
 		void applyMerge() {
 			_applyMerge();
 		}
-		// OBSOLETE
-		//ITransformable* firstTransformableParent(GHANDLE handle) const{
-		//    std::queue<GHANDLE> owners;
-		//    owners.push(handle);
-		//    while(!owners.empty()){
-		//        auto i = owners.front();
-		//        owners.pop();
-		//        if(auto v = dynamic_cast<ITransformable*>(get_ptr(i))){
-		//            if(!v->isInherited()) return v;
-		//        }
-		//        if(ownership[i].size() > 0) owners.push(*ownership[i].begin());
-		//        //for(auto j : ownership[i]) owners.push(j);
-		//    }
-		//    return nullptr;
-		//}
 
 		//[TODO] Scene copy();
 	protected:

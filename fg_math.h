@@ -329,6 +329,8 @@ namespace fg {
 			return result;
 		}
 
+		// определеяет, с какой стороны плоскости находится точка
+		// 0 - на плоскости, 1 - спереди, -1 - сзади
 		inline int classify(const vector3& p) const {
 			double test = (p - p0)&n;
 			if (test < -FG_EPS) return -1;
