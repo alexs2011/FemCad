@@ -60,6 +60,288 @@ namespace fg {
 				}
 			}
 		}
+		static int intersect_segment(const Element& s, vector3 l1p0, vector3 l1p1, std::vector<vector3>& res) {
+			try {
+				auto& e = dynamic_cast<const LineSegment&>(s);
+				return intersect_segment(e, l1p0, l1p1, res);
+			}
+			catch (...) {
+				auto& e = dynamic_cast<const EllipticSegment&>(s);
+				return intersect_segment(e, l1p0, l1p1, res);
+			}
+		}
+		static int intersect_segment(const LineSegment& l0, vector3 l1p0, vector3 l1p1, std::vector<vector3>& res) {
+			auto l0p0 = l0.P0();
+			auto l0p1 = l0.P1();
+
+			plane pl0 = plane::byTwoPointsAndNormal(l0p0, l0p1, vector3(0.0, 0.0, 1.0));
+			bool first = pl0.classify(l1p0) != pl0.classify(l1p1);
+			if ((l0.getTangent() ^ (l1p1 - l1p0)).lengthSq() < FG_EPS)
+			{
+				if (pl0.classify(l1p0) == 0) {
+					if (l0p0 < l0p1) {
+						if (l1p0 < l1p1) {
+							if (l1p0 < l0p0) {
+								if (l1p1 < l0p1) {
+									if (l1p1 > l0p0) { // l1p0, l0p0, l1p1, l0p1
+										res.push_back(l0p0);
+										res.push_back(l1p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l1p0, l1p1, l0p0, l0p1
+										return 0;
+									}
+								}
+								else { // l1p0, l0p0, l0p1, l1p1
+									res.push_back(l0p0);
+									res.push_back(l0p1);
+									if (res.back() == res[res.size() - 2]) {
+										res.pop_back();
+										return 1;
+									}
+									return 2;
+								}
+							}
+							else {
+								if (l1p0 < l0p1) {
+									if (l1p1 < l0p1) { // l0p0, l1p0, l1p1, l0p1
+										res.push_back(l1p0);
+										res.push_back(l1p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l0p0, l1p0, l0p1, l1p1
+										res.push_back(l1p0);
+										res.push_back(l0p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+								}
+								else { // l0p0, l0p1, l1p0, l1p1
+									return 0;
+								}
+							}
+						}
+						else {
+							if (l1p1 < l0p0) {
+								if (l1p0 < l0p1) {
+									if (l1p0 > l0p0) { // l1p1, l0p0, l1p0, l0p1
+										res.push_back(l0p0);
+										res.push_back(l1p0);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l1p1, l1p0, l0p0, l0p1
+										return 0;
+									}
+								}
+								else { // l1p1, l0p0, l0p1, l1p0
+									res.push_back(l0p0);
+									res.push_back(l0p1);
+									if (res.back() == res[res.size() - 2]) {
+										res.pop_back();
+										return 1;
+									}
+									return 2;
+								}
+							}
+							else {
+								if (l1p1 < l0p1) {
+									if (l1p0 < l0p1) { // l0p0, l1p1, l1p0, l0p1
+										res.push_back(l1p0);
+										res.push_back(l1p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l0p0, l1p1, l0p1, l1p0
+										res.push_back(l0p1);
+										res.push_back(l1p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+								}
+								else { // l0p0, l0p1, l1p1, l1p0
+									return 0;
+								}
+							}
+						}
+					}
+					else {
+						if (l1p0 < l1p1) {
+							if (l1p0 < l0p1) {
+								if (l1p1 < l0p0) {
+									if (l1p1 > l0p1) { // l1p0, l0p1, l1p1, l0p0
+										res.push_back(l1p1);
+										res.push_back(l0p0);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l1p0, l1p1, l0p1, l0p0
+										return 0;
+									}
+								}
+								else { // l1p0, l0p1, l0p0, l1p1
+									res.push_back(l0p0);
+									res.push_back(l0p1);
+									if (res.back() == res[res.size() - 2]) {
+										res.pop_back();
+										return 1;
+									}
+									return 2;
+								}
+							}
+							else {
+								if (l1p0 < l0p0) {
+									if (l1p1 < l0p0) { // l0p1, l1p0, l1p1, l0p0
+										res.push_back(l1p0);
+										res.push_back(l1p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l0p1, l1p0, l0p0, l1p1
+										res.push_back(l0p0);
+										res.push_back(l1p0);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+								}
+								else { // l0p1, l0p0, l1p0, l1p1
+									return 0;
+								}
+							}
+						}
+						else {
+							if (l1p1 < l0p1) {
+								if (l1p0 < l0p0) {
+									if (l1p0 > l0p1) { // l1p1, l0p1, l1p0, l0p0
+										res.push_back(l1p0);
+										res.push_back(l0p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l1p1, l1p0, l0p1, l0p0
+										return 0;
+									}
+								}
+								else { // l1p1, l0p1, l0p0, l1p0
+									res.push_back(l0p0);
+									res.push_back(l0p1);
+									if (res.back() == res[res.size() - 2]) {
+										res.pop_back();
+										return 1;
+									}
+									return 2;
+								}
+							}
+							else {
+								if (l1p0 < l0p0) {
+									if (l1p1 < l0p0) { // l0p1, l1p1, l1p0, l0p0
+										res.push_back(l1p0);
+										res.push_back(l1p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+									else { // l0p1, l1p1, l0p0, l1p0
+										res.push_back(l0p0);
+										res.push_back(l1p1);
+										if (res.back() == res[res.size() - 2]) {
+											res.pop_back();
+											return 1;
+										}
+										return 2;
+									}
+								}
+								else { // l0p1, l0p0, l1p1, l1p0
+									return 0;
+								}
+							}
+						}
+					}
+				}
+				return 0;
+			}
+			plane pl1 = plane::byTwoPointsAndNormal(l1p0, l1p1, vector3(0.0, 0.0, 1.0));
+			bool second = pl1.classify(l0p0) != pl1.classify(l0p1);
+			vector3 ll0 = l0p0 - l0p1;
+			vector3 ll1 = l1p0 - l1p1;
+			vector3 tl0 = ll0.getNormalized();
+			vector3 nl0 = tl0 ^ vector3(0.0, 0.0, 1.0);
+			if (first && second) {
+				vector3 v0 = l0p1 - l1p1;
+				if (std::fabs(ll1&nl0) < FG_EPS) return 0;
+				auto point = (v0&nl0)*nl0 + (v0&nl0)*(ll1&tl0) / (ll1&nl0) * tl0 + l1p1;
+				res.push_back(point);
+				return 1;
+			}
+			return 0;
+		}
+		static int intersect_segment(const EllipticSegment& e, vector3 l1p0, vector3 l1p1, std::vector<vector3>& res) {
+			auto l0p0 = e.P0();
+			auto l0p1 = e.P1();
+			auto c = e.Center();
+			//auto t = l0.getTangent();
+			auto t = l1p1 - l1p0;
+			square_curve transformed_l0 = e.getCurve();//l1.curve.getTransformed(l1.getTransform().GetTransform());
+			square_curve line_l1 = square_curve::line(l1p0, t);
+
+			bool v;
+			std::vector<vector3> pre_intersect;
+			transformed_l0.find_intersection(v, line_l1, pre_intersect);
+			if (v) {
+				return 0;// IntersectionState::Incident;
+			}
+			auto n0 = l0p0 - c;
+			auto n1 = l0p1 - c;
+			auto t0 = c.normalToPoint(n0, l0p1);
+			auto t1 = c.normalToPoint(n1, l0p0);
+			int rc = 0;
+			for (size_t i = 0U; i < pre_intersect.size(); i++) {
+				auto vec = pre_intersect[i] - l1p0;
+				auto sc = (t & vec) / t.lengthSq();
+				if (sc >= 0.0 - FG_EPS && sc <= 1.0 + FG_EPS) {
+					if ((t0 & (pre_intersect[i] - c)) >= 0.0f - FG_EPS &&
+						(t1 & (pre_intersect[i] - c)) >= 0.0f - FG_EPS) {
+						res.push_back(pre_intersect[i]);
+						rc++;
+					}
+				}
+			}
+			return rc;
+		}
 	protected:
 		static inline IntersectionState _intersect(std::vector<vector3>& ppl0, std::vector<vector3>& ppl1, const LineSegment& l0, const LineSegment& l1) {
 			auto l0p0 = l0.P0();
@@ -927,6 +1209,7 @@ namespace fg {
 			int r = splitter.classify(p0);
 			int rl = splitter.classify(p1);
 			if (r == -rl) {
+				// middle - это точка, которая лежит на середне дуги между p0 и p1
 				if (r == 0) return (ClassificationState)splitter.classify(line.middle());
 				return ClassificationState::Cross;
 			}

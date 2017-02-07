@@ -11,7 +11,9 @@ namespace fg {
 		static int ID;
 		friend class FEMCADGEOMSHARED_EXPORT IGeometry;
 		int id;
+		// все вершины, отрезки, кривые, фигуры, которые входт в сцену
 		std::vector<std::unique_ptr<IGeometry>> geometry;
+		// для каждого хэндлера объекта указываются хэндлеры объектов, которые в него входят ???
 		std::vector<std::set<GHANDLE>> ownership;
 		TransformRoot root;
 	public:

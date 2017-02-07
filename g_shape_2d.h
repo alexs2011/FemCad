@@ -4,9 +4,12 @@
 
 namespace fg {
 	namespace primitive {
-		class FEMCADGEOMSHARED_EXPORT Shape : public Primitive, public IPrintable {
+		// некоторая замкнутая совокупность отрезков и кривых
+		class FEMCADGEOMSHARED_EXPORT Shape : public Primitive, public IPrintable
+		{
 			std::unique_ptr<BSPTree<ILine>> bsp;
 		protected:
+			// для чего этот конструктор ???
 			Shape(Scene& s, const SETTINGHANDLE& setting, std::vector<GHANDLE>&& geom)
 				: Primitive(s, setting, geom) {
 				addSelfToContext();

@@ -1,6 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "fg_math.h"
+#include "g_intersector.h"
 
 namespace fg {
 	class FEMCADGEOMSHARED_EXPORT RawMesh2 {
@@ -151,8 +152,8 @@ namespace fg {
 
 			remove_edge_from_tree(edge);
 			remove_edge_from_tree(et0);
-			if(et0 != et1) remove_edge_from_tree(et1);
-			
+			if (et0 != et1) remove_edge_from_tree(et1);
+
 			auto tt0i = edge_triangles[et0].first == tris.first ? edge_triangles[et0].second : edge_triangles[et0].first;
 			auto& tt0 = triangles[tt0i];
 			auto old_t = tt0;
@@ -219,14 +220,14 @@ namespace fg {
 			auto pfold = points[e.first];
 			auto psold = points[e.second];
 			points[e.first] = (weight * points[e.first] + (1.0 - weight) * points[e.second]);
-			std::swap(point_edges[e.second], point_edges.back()); 
+			std::swap(point_edges[e.second], point_edges.back());
 			point_edges.pop_back();
 			sz = point_edges.size();
 			for (auto i{ point_edges[e.second].begin() }; i != point_edges[e.second].end(); i++) {
 				auto& p = edges[*i];
 				if (p.first == sz) {
 					p.first = e.second;
-					fix_edge_rect(rect{points[p.second], psold}, *i);
+					fix_edge_rect(rect{ points[p.second], psold }, *i);
 				}
 				else if (p.second == sz) {
 					p.second = e.second;
@@ -424,6 +425,17 @@ namespace fg {
 			l.z = 1.0 - l.x - l.y;
 			return !(l.x < -FG_EPS || l.y < -FG_EPS || l.z < -FG_EPS);
 		}
+		inline vector3 cast(const vector3& point, std::tuple<size_t, size_t, size_t>& vertices) const {
+			vector3 l;
+			std::set<TriangleIndex> overlaps;
+			triangle_lookup->get_overlap(rect{ point }, overlaps);
+			for (auto i{ overlaps.begin() }; i != overlaps.end(); i++) {
+				if (test(*i, point, l)) {
+					vertices = triangleVertices(*i);
+					return l;
+				}
+			}
+		}
 		inline GeometryType cast(const vector3& point, size_t& result) const {
 			vector3 l;
 			std::set<TriangleIndex> overlaps;
@@ -463,20 +475,133 @@ namespace fg {
 			result = 0xFFFFFFFF;
 			return GeometryType::None;
 		}
-		inline GeometryType insert_point(const vector3& point, std::tuple<size_t, size_t, size_t>& out) {
+		inline EdgeIndex flip(EdgeIndex e) {
+			auto tri = edge_triangles[e];
+			if (tri.first == tri.second) return 0xFFFFFFFF;
+			auto t0 = triangles[tri.first];
+			auto t1 = triangles[tri.second];
+			size_t p0, p1;
+			size_t pn0, pn1;
+			size_t fedge0, fedge1;
+			std::tie(p0, p1) = edges[e];
+			{
+				auto triangle = t0;
+				if (std::get<0>(triangle) == e) {
+					auto edge_t = (edges[std::get<1>(triangle)]);
+					if (edge_t.first == p0) {
+						fedge0 = std::get<1>(triangle);
+						pn0 = edge_t.second;
+					}
+					else if (edge_t.second == p0) {
+						fedge0 = std::get<1>(triangle);
+						pn0 = edge_t.first;
+					}
+					else {
+						fedge0 = std::get<2>(triangle);
+						pn0 = edge_t.first == p1 ? edge_t.second : edge_t.first;
+					}
+				}
+				else {
+					auto edge_t = (edges[std::get<0>(triangle)]);
+					if (edge_t.first == p0) {
+						fedge0 = std::get<0>(triangle);
+						pn0 = edge_t.second;
+					}
+					else if (edge_t.second == p0) {
+						fedge0 = std::get<0>(triangle);
+						pn0 = edge_t.first;
+					}
+					else {
+						fedge0 = std::get<1>(triangle) == e ? std::get<2>(triangle) : std::get<1>(triangle);
+						pn0 = edge_t.first == p1 ? edge_t.second : edge_t.first;
+					}
+				}
+			};
+			{
+				auto triangle = t1;
+				if (std::get<0>(triangle) == e) {
+					auto edge_t = (edges[std::get<1>(triangle)]);
+					if (edge_t.first == p0) {
+						fedge1 = std::get<1>(triangle);
+						pn1 = edge_t.second;
+					}
+					else if (edge_t.second == p0) {
+						fedge1 = std::get<1>(triangle);
+						pn1 = edge_t.first;
+					}
+					else {
+						fedge1 = std::get<2>(triangle);
+						pn1 = edge_t.first == p1 ? edge_t.second : edge_t.first;
+					}
+				}
+				else {
+					auto edge_t = (edges[std::get<0>(triangle)]);
+					if (edge_t.first == p0) {
+						fedge1 = std::get<0>(triangle);
+						pn1 = edge_t.second;
+					}
+					else if (edge_t.second == p0) {
+						fedge1 = std::get<0>(triangle);
+						pn1 = edge_t.first;
+					}
+					else {
+						fedge1 = std::get<1>(triangle) == e ? std::get<2>(triangle) : std::get<1>(triangle);
+						pn1 = edge_t.first == p1 ? edge_t.second : edge_t.first;
+					}
+				}
+			};
+			if (edge_triangles[fedge0].first == tri.first)
+				edge_triangles[fedge0].first = tri.second;
+			if (edge_triangles[fedge0].second == tri.first)
+				edge_triangles[fedge0].second = tri.second;
+			if (edge_triangles[fedge1].first == tri.second)
+				edge_triangles[fedge1].first = tri.first;
+			if (edge_triangles[fedge1].second == tri.second)
+				edge_triangles[fedge1].second = tri.first;
+			if (std::get<0>(triangles[tri.first]) == fedge0)
+				std::get<0>(triangles[tri.first]) = fedge1;
+			else if (std::get<1>(triangles[tri.first]) == fedge0)
+				std::get<1>(triangles[tri.first]) = fedge1;
+			else if (std::get<2>(triangles[tri.first]) == fedge0)
+				std::get<2>(triangles[tri.first]) = fedge1;
+			if (std::get<0>(triangles[tri.second]) == fedge1)
+				std::get<0>(triangles[tri.second]) = fedge0;
+			else if (std::get<1>(triangles[tri.second]) == fedge1)
+				std::get<1>(triangles[tri.second]) = fedge0;
+			else if (std::get<2>(triangles[tri.second]) == fedge1)
+				std::get<2>(triangles[tri.second]) = fedge0;
+
+			point_edges[p0].erase(e);
+			point_edges[p1].erase(e);
+			point_edges[pn0].insert(e);
+			point_edges[pn1].insert(e);
+
+			edges[e] = std::make_pair(pn0, pn1);
+
+			fix_triangle_rect(t0, tri.first);
+			fix_triangle_rect(t1, tri.second);
+		}
+		/*inline void insert_point(const vector3& point) {
+			std::tuple<size_t, size_t, size_t> _;
+			insert_point(point, _);
+		}*/
+		inline GeometryType insert_point(const vector3& point, std::tuple<size_t, size_t, size_t>& out, size_t& el) {
 			size_t element;
 			switch (cast(point, element)) {
 			case GeometryType::None:
+				el = 0xFFFFFFFF;
 				return GeometryType::None;
 			case GeometryType::Vertex:
+				el = element;
 				return GeometryType::Vertex;
 			case GeometryType::Edge:
 			{
-				points.push_back(point);
+				//points.push_back(point);
 				auto p0 = points[edges[element].first];
 				auto p1 = points[edges[element].second];
 				double w = (point - p1).length() / (p1 - p0).length();
 				out = subdivideEdge(element, w);
+				el = element;
 				return GeometryType::Edge;
 			}
 			case GeometryType::Triangle:
@@ -530,6 +655,7 @@ namespace fg {
 				add_edge_to_tree(ne2);
 
 				out = std::make_tuple(ne0, ne1, ne2);
+				el = element;
 				return GeometryType::Triangle;
 			}
 			return GeometryType::None;
@@ -537,10 +663,61 @@ namespace fg {
 		inline int TrianglesLength() const {
 			return triangles.size();
 		}
+		inline Triangle triangle(size_t index) const {
+			return triangles[index];
+		}
+		inline size_t edgesCount() const {
+			return edges.size();
+		}
+		inline size_t pointsCount() const {
+			return points.size();
+		}
+		inline Edge edge(EdgeIndex i) const {
+			return edges[i];
+		}
+		inline std::pair<TriangleIndex, TriangleIndex> edge_triangle(EdgeIndex i) const {
+			return edge_triangles[i];
+		}
+		inline const std::set<EdgeIndex>& point_edge(size_t point) const {
+			return point_edges[point];
+		}
+
+		inline vector3 sample_edge(size_t edge, double w) const {
+			return points[edges[edge].first] * (1.0 - w) + points[edges[edge].second] * (w);
+		}
+		inline double edge_length(size_t edge) const {
+			return (points[edges[edge].first] - points[edges[edge].second]).length();
+		}
+		inline double edge_length_sq(size_t edge) const {
+			return (points[edges[edge].first] - points[edges[edge].second]).lengthSq();
+		}
+		inline vector3 edge_tangent(size_t edge) const {
+			return (points[edges[edge].first] - points[edges[edge].second]);
+		}
+		inline vector3 point(size_t index) const {
+			return points[index];
+		}
 		inline vector3 getCoordsByPointIdx(size_t idx) const {
 			return points[idx];
 		}
 		friend class MeshView2d;
+		bool isLineInsideTriangle(const ILine& l, Mesh2::EdgeIndex le, Mesh2::TriangleIndex tri) {
+			size_t thirdVertexIndex;
+			auto edge = edges[le];
+			if (std::get<0>(triangles[tri]) == le) {
+				auto oe = edges[std::get<1>(triangles[tri])];
+				thirdVertexIndex = (oe.first == edge.first || oe.first == edge.second) ? oe.second : oe.first;
+			}
+			else {
+				auto oe = edges[std::get<0>(triangles[tri])];
+				thirdVertexIndex = (oe.first == edge.first || oe.first == edge.second) ? oe.second : oe.first;
+			}
+			auto c = 0.5 * (points[edge.first] + points[edge.second]);
+			return l.classify(c) == -l.classify(points[thirdVertexIndex]);
+		}
+		int intersect(const EllipticSegment& l, EdgeIndex e, std::vector<vector3>& res) {
+			return Intersector<ILine>::intersect_segment(l, points[edges[e].first], points[edges[e].second], res);
+		}
 	protected:
 		std::vector<vector3> points;
 		std::vector<Edge> edges;
@@ -556,7 +733,6 @@ namespace fg {
 		//std::vector<TriangleIndex> tree_index;
 
 		const Triangle EmptyTriangle = std::make_tuple(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
-	protected:
 		inline void remove_triangle_from_tree(TriangleIndex tri) {
 			rect r = rect{ points[edges[std::get<0>(triangles[tri])].first],
 				points[edges[std::get<0>(triangles[tri])].second] }.
@@ -617,7 +793,10 @@ namespace fg {
 				points[edges[tri].second] };
 			edge_lookup->replace_element_rect(std::make_pair(ro, tri), r);
 		}
-
+	public:
+		const TriangleLookup& lookup() const {
+			return *triangle_lookup;
+		}
 	};
 
 }

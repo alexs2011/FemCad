@@ -22,7 +22,7 @@ namespace fg {
 		void build() {
 			points.resize(N - 1);
 			//points.front() = 0.0;
-			if (std::fabs(q - 1.0) < 1e-12) {
+			if (std::fabs(q - 1.0) < 1e-12 || N == 1) {
 				double b = 1.0 / N;
 				for (size_t i = 1U; i < N; ++i)
 					points[i - 1] = i*b;

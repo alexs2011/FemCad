@@ -54,8 +54,11 @@ namespace fg {
 		virtual std::vector<GHANDLE> getChildren() const { return{ _p0, _p1 }; }
 		virtual void applyTransform(const matrix4x4& m) = 0;
 		virtual std::vector<GHANDLE> getBoundary() const { return{ _p0, _p1 }; }
+		virtual inline rect getBoundingRect() const = 0;
+		virtual inline rect getBoundingRect(double t0, double t1) const = 0;
 
 		virtual vector3 sample(double t) const = 0;
+		virtual double getParam(const vector3& point) const = 0;
 
 		//virtual bool IsIncident(vector3 p) {
 		//	return getDistance(ray(p + vector3(0, 0, 10.0), -vector3::Z())) < FG_EPS;
@@ -144,6 +147,11 @@ namespace fg {
 		virtual inline rect getBoundingRect() const {
 			return rect{ P0(), P1() };
 		}
+		virtual inline rect getBoundingRect(double t0, double t1) const {
+			auto pp0 = sample(t0);
+			auto pp1 = sample(t1);
+			return rect{ pp0, pp1 };
+		}
 		bool isInPlane(const plane& p) const {
 			//plane p(transformation.GetInversedTransform() * p_origin._p0, transformation.GetInversedTransform() & p_origin.n);
 			return p0ptr()->isInPlane(p) && p1ptr()->isInPlane(p);
@@ -192,6 +200,12 @@ namespace fg {
 		virtual vector3 sample(double t) const {
 			return P0() * (1.0 - t) + P1() * t;
 		}
+
+		virtual double getParam(const vector3& point) const {
+			auto pp0 = P0();
+			auto pp1 = P1();
+			return (std::fabs(pp0.x - pp1.x) < FG_EPS) ? (point.y - pp0.y) / (pp1.y - pp0.y) : (point.x - pp0.x) / (pp1.x - pp0.x);
+		}
 	protected:
 		virtual void addSelfToContext() {
 			_handle = getContext().add(std::move(*this), { _p0, _p1 });
@@ -204,15 +218,18 @@ namespace fg {
 		square_curve _curve;
 	public:
 		EllipticSegment(Scene& context, const SETTINGHANDLE& setting, GHANDLE _p0, GHANDLE _p1, GHANDLE _center) :
-			ILine(context, setting, _p0, _p1), _center(_center) {
+			ILine(context, setting, _p0, _p1), _center(_center)
+		{
 			auto c = dynamic_cast<Vertex*>(context.get_ptr(_center));
 			if (c == nullptr)
 				throw std::runtime_error("Unalble to define CircleSegment. Center is not a point");
+
 			auto r0 = (c->position() - p0ptr()->position()).lengthSq();
 			auto r1 = (c->position() - p1ptr()->position()).lengthSq();
 			if (std::fabs(r0 - r1) > FG_EPS) throw std::logic_error("Unable to define circle");
 			_curve = square_curve::circle(r0, c->position());
 			_curve.cache_parametrization(p0ptr()->position(), p1ptr()->position(), cached_matrix, cached_t0, cached_t1);
+			cached_matrix_inv = cached_matrix.get_inversed();
 			addSelfToContext();
 		}
 		EllipticSegment(Scene& context, const SETTINGHANDLE& setting, GHANDLE _p0, GHANDLE _p1, GHANDLE _center, const square_curve& curve) :
@@ -221,11 +238,12 @@ namespace fg {
 			if (c == nullptr)
 				throw std::runtime_error("Unalble to define CircleSegment. Center is not a point");
 			_curve.cache_parametrization(p0ptr()->position(), p1ptr()->position(), cached_matrix, cached_t0, cached_t1);
+			cached_matrix_inv = cached_matrix.get_inversed();
 			addSelfToContext();
 		}
 		EllipticSegment(EllipticSegment&& l) :
 			ILine(std::move(l)), _center(l._center), _curve(l._curve), 
-			cached_matrix(l.cached_matrix), cached_t0(l.cached_t0), cached_t1(l.cached_t1) {
+			cached_matrix(l.cached_matrix), cached_matrix_inv(l.cached_matrix_inv), cached_t0(l.cached_t0), cached_t1(l.cached_t1) {
 		}
 
 		virtual inline GHANDLE createSame(Scene& context, const SETTINGHANDLE& setting, const std::vector<GHANDLE>& p) {
@@ -317,6 +335,16 @@ namespace fg {
 				throw FGException("Invalid curve");
 			}
 		}
+		virtual inline rect getBoundingRect(double t0, double t1) const {
+			auto pp0 = sample(t0);
+			auto pp1 = sample(t1);
+			try {
+				return rect(pp0, pp1).add_point(getCurve().control_point(pp0, pp1));
+			}
+			catch (std::invalid_argument&) {
+				throw FGException("Invalid curve");
+			}
+		}
 		virtual void applyTransform(const matrix4x4& m) {
 			//ILine::applyTransform(m);
 			//centerptr()->applyTransform(m);
@@ -376,6 +404,7 @@ namespace fg {
 			return -1;
 			//return (dot > 0 ? -1 : 1) * (curv < 0 ? -1 : (curv == 0 ? (ddot > -FG_EPS ? 0 : -1) : (ddot < -FG_EPS ? -1 : (ddot > FG_EPS ? 1 : 0))));
 		}
+		// middle - это точка, которая лежит на середне дуги между её началом и концом
 		virtual vector3 middle() const {
 			return getCurve().get_point(0.5, P0(), P1());
 			//return getTransform() * (0.5 * (localP0() + localP1()).getNormalized() * Radius());
@@ -388,8 +417,12 @@ namespace fg {
 		virtual vector3 sample(double t) const {
 			return getCurve().get_point(t, cached_matrix, cached_t0, cached_t1);
 		}
+		virtual double getParam(const vector3& point) const {
+			return getCurve().get_param(point, cached_matrix_inv, cached_t0, cached_t1);
+		}
 	protected:
 		matrix4x4 cached_matrix;
+		matrix4x4 cached_matrix_inv;
 		double cached_t0, cached_t1;
 		virtual void addSelfToContext() {
 			_handle = getContext().add(std::move(*this), getChildren());

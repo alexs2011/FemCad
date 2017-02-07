@@ -927,7 +927,7 @@ namespace fg {
 	public:
 		lookup_tree(lookup_tree&&) = default;
 		lookup_tree(size_t max_depth, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max) :
-			lookup_tree(max_depth, std::sqrt(rectangles.size()) + 4, std::move(rectangles), min, max, max_depth) {
+			lookup_tree(max_depth, std::sqrt(rectangles.size()) + 10, std::move(rectangles), min, max, max_depth) {
 		}
 		lookup_tree(size_t depth, size_t max_elements, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max, const size_t max_depth) : Mx{ max_elements }, max_depth{ max_depth } {
 			if (rectangles.size() < Mx || depth <= 0) {
@@ -1072,6 +1072,8 @@ namespace fg {
 		//	return rect{ {ax - dx, ay - dy, 0}, {ax + dx, ay + dy, 0} };
 		//}
 		//
+
+		// какая точка здесь считается, что она означает ???
 
 		vector3 control_point(const vector3& p0, const vector3& p1) {
 			double dy0 = 2.0*a*p0.x + c*p0.y + d;
@@ -1294,7 +1296,7 @@ namespace fg {
 			else {
 				if (t0 < 0) t0 += 2 * PI;
 				else t1 += 2 * PI;
-				tt = (t1 * t + (1.0 - t) * (t0));
+				tt = t1 * t + (1.0 - t) * (t0);
 			}
 			double x = std::cos(tt);
 			double y = std::sin(tt);
@@ -1309,11 +1311,22 @@ namespace fg {
 			else {
 				if (t0 < 0) t0 += 2 * PI;
 				else t1 += 2 * PI;
-				tt = (t1 * t + (1.0 - t) * (t0));
+				tt = t1 * t + (1.0 - t) * t0;
 			}
 			double x = std::cos(tt);
 			double y = std::sin(tt);
 			return m * vector3(x, y, 0.0);
+		}
+		double get_param(const vector3& point, const matrix4x4& m_inv, double t0, double t1) {
+			auto p = m_inv/*.get_inversed()*/ * point;
+			double tt = std::atan2(p.y, p.x);
+			if (std::abs(t0 - t1) < PI) {
+				return (tt - t0) / (t1 - t0);
+			}else{
+				if (t0 < 0) t0 += 2 * PI;
+				else t1 += 2 * PI;
+				return (tt - t0) / (t1 - t0);
+			}
 		}
 	protected:
 		matrix4x4 get_parametrized_transform() const {

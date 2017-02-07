@@ -39,8 +39,9 @@ namespace fg {
 		}
 	};
 
-	// Класс содержащий данные о геометрии
-	class FEMCADGEOMSHARED_EXPORT Primitive : public PrimitiveBase {
+	// Абстрактный класс, обобщающий замкнутые совокупности отрезков и кривых
+	class FEMCADGEOMSHARED_EXPORT Primitive : public PrimitiveBase
+	{
 	protected:
 		std::vector<GHANDLE> geometry;
 		Primitive(Scene& s, const SETTINGHANDLE& setting) : PrimitiveBase(s, setting) { }
