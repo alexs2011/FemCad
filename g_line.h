@@ -51,6 +51,7 @@ namespace fg {
 			if (o == _p0) _p0 = n;
 			if (o == _p1) _p1 = n;
 		}
+		// возвращает наало и конец линии
 		virtual std::vector<GHANDLE> getChildren() const { return{ _p0, _p1 }; }
 		virtual void applyTransform(const matrix4x4& m) = 0;
 		virtual std::vector<GHANDLE> getBoundary() const { return{ _p0, _p1 }; }
@@ -281,19 +282,18 @@ namespace fg {
 			return _curve;
 			//return _curve.getTransformed(getInversedTransform());
 		}
+
+		// определяет, что точка лежит на границе сегмента
 		virtual bool pointCast(const vector3 &v)const {
 			if (classify(v) != 0) return false;
+			// центр окружности
 			vector3 cp = Center();
 			vector3 cp0 = P0() - cp;
 			vector3 cp1 = P1() - cp;
+			// определяется, в каком порядке p0 и p1 пробегаются по окружности
 			double sign = (cp0 ^ cp1).z;
 			vector3 cv = v - cp;
 			return (cv ^ cp0).z * sign < FG_EPS && sign * (cv ^ cp1).z > -FG_EPS;
-			/*double cvcp0z = (cv ^ cp0).z;
-			if (cvcp0z * sign < 0) {
-			if ((cv ^ cp1).z * sign > 0) {
-			return cv.length();
-			}*/
 		}
 
 		virtual void sortAlong(std::vector<std::pair<vector3, GHANDLE>>& v) const {

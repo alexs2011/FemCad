@@ -13,7 +13,7 @@ namespace fg {
 		int id;
 		// все вершины, отрезки, кривые, фигуры, которые входт в сцену
 		std::vector<std::unique_ptr<IGeometry>> geometry;
-		// для каждого хэндлера объекта указываются хэндлеры объектов, которые в него входят ???
+		// для каждого хэндлера объекта указываются хэндлеры объектов, в которые он входит
 		std::vector<std::set<GHANDLE>> ownership;
 		TransformRoot root;
 	public:
@@ -52,18 +52,21 @@ namespace fg {
 			//geometry.back()->init();
 			return geometry.back()->init();
 		}
+		// зачем-то передаем не только объект, но и его геометрию, хотя она в нём и так есть в качестве поля ???
 		template<class T>
-		GHANDLE add(T&& object, std::vector<GHANDLE> children) {
+		GHANDLE add(T&& object, std::vector<GHANDLE> children)
+		{
 			static_assert(std::is_base_of<IGeometry, T>::value, "Can't add non IGeometry type object");
-			geometry.emplace_back(std::make_unique<T>(std::move(object)));
+			geometry.emplace_back(std::make_unique<T>(std::move(object))); // кладем объект в конец массива геометрии сцены
 			geometry.back()->setHandle(geometry.size() - 1);
+			// добавляемый объект не входит не в один другой объект
 			ownership.push_back(std::set<GHANDLE>());
+			// наследники добавляемого объекта входят в добавляемй объект
 			for (auto i = children.begin(); i != children.end(); ++i) {
 				if (ownership[*i].count(geometry.size() - 1) == 0)
 					ownership[*i].insert(geometry.size() - 1);
 			}
-			//geometry.back()->init();
-			//ownership.push_back(std::vector<const IGeometry*>(children));
+			// инициализируем добавленный в сцену объект и вернём его хэндлер
 			return geometry.back()->init();
 		}
 

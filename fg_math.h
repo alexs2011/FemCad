@@ -927,7 +927,7 @@ namespace fg {
 	public:
 		lookup_tree(lookup_tree&&) = default;
 		lookup_tree(size_t max_depth, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max) :
-			lookup_tree(max_depth, std::sqrt(rectangles.size()) + 10, std::move(rectangles), min, max, max_depth) {
+			lookup_tree(max_depth, std::max(100U, (size_t)std::sqrt(rectangles.size()) + 10), std::move(rectangles), min, max, max_depth) {
 		}
 		lookup_tree(size_t depth, size_t max_elements, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max, const size_t max_depth) : Mx{ max_elements }, max_depth{ max_depth } {
 			if (rectangles.size() < Mx || depth <= 0) {
@@ -947,7 +947,7 @@ namespace fg {
 			if (back.size()) s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(back), min, nmax, max_depth)));
 			if (front.size()) s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(front), nmin, max, max_depth)));
 		}
-
+		// находит все элементы дерева, которые пересекаются с данным прямоугольником
 		void get_overlap(const rect& r, std::set<T>& output) const {
 			if (s[0]) s[0]->get_overlap(r, output);
 			if (s[1]) s[1]->get_overlap(r, output);
@@ -1048,6 +1048,7 @@ namespace fg {
 		}
 	};
 
+	// класс, задающий уравнение окружности
 	class FEMCADGEOMSHARED_EXPORT square_curve {
 	public:
 		// a * x2 + b * y2 + c * x * y + d * x + e * y + f = 0
@@ -1073,8 +1074,7 @@ namespace fg {
 		//}
 		//
 
-		// какая точка здесь считается, что она означает ???
-
+		// точка пересечения касательных к дуге, проведённых в точках p0 и p1
 		vector3 control_point(const vector3& p0, const vector3& p1) {
 			double dy0 = 2.0*a*p0.x + c*p0.y + d;
 			double dy1 = 2.0*a*p1.x + c*p1.y + d;
@@ -1206,8 +1206,9 @@ namespace fg {
 
 			return result;
 		}
-		void find_intersection(bool& v, const square_curve& cr,
-			std::vector<vector3>& intersections)const {
+		
+		void find_intersection(bool& v, const square_curve& cr, std::vector<vector3>& intersections) const
+		{
 			polynome xp = this->collect_x(cr);
 			const square_curve* cur = &cr;
 			const square_curve* ths = this;
@@ -1265,6 +1266,7 @@ namespace fg {
 			//}
 			return;
 		}
+
 		bool operator ==(const square_curve& curve) const {
 			return equals_eps(a, curve.a) &&
 				equals_eps(b, curve.b) &&

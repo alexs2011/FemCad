@@ -20,15 +20,15 @@ namespace fg {
 			}
 		}
 	};
+
 	enum class GeometryType {
 		None = 0x0,
 		Vertex = 0x1,
 		Edge = 0x2,
 		Triangle = 0x3
 	};
+
 	class FEMCADGEOMSHARED_EXPORT Mesh2 {
-
-
 	public:
 		using Edge = std::pair<size_t, size_t>;
 		using Triangle = std::tuple<size_t, size_t, size_t>;
@@ -37,7 +37,7 @@ namespace fg {
 		using TreeTriangleIndex = size_t;
 
 		inline Mesh2(const RawMesh2& mesh) : points{ mesh.points } {
-			std::map<Edge, std::list<size_t>> all_edges;
+			std::map<Edge, std::vector<size_t>> all_edges;
 			point_edges.resize(points.size());
 			std::vector<std::pair<rect, TriangleIndex>> rects(mesh.triangles.size());
 			rect brect{};
@@ -56,7 +56,7 @@ namespace fg {
 			size_t p{};
 			edges.resize(all_edges.size());
 			edge_triangles.resize(all_edges.size());
-
+			// дерево для поиска тр-ков
 			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
 			rects.clear();
 			for (auto& i : all_edges) {
@@ -81,8 +81,9 @@ namespace fg {
 				rects.push_back(std::make_pair(rect{ points[i.first.first], points[i.first.second] }, p));
 				p++;
 			}
-			edge_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
+			//edge_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
 		}
+
 		inline std::array<EdgeIndex, 3> collapseEdge(EdgeIndex edge, double weight = 0.5) {
 			auto e = edges[edge];
 			auto tris = edge_triangles[edge];
@@ -150,9 +151,9 @@ namespace fg {
 				edge_triangles[ot1].first == edge_triangles[et1].second)
 				return{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
 
-			remove_edge_from_tree(edge);
-			remove_edge_from_tree(et0);
-			if (et0 != et1) remove_edge_from_tree(et1);
+			//remove_edge_from_tree(edge);
+			//remove_edge_from_tree(et0);
+			//if (et0 != et1) remove_edge_from_tree(et1);
 
 			auto tt0i = edge_triangles[et0].first == tris.first ? edge_triangles[et0].second : edge_triangles[et0].first;
 			auto& tt0 = triangles[tt0i];
@@ -227,23 +228,23 @@ namespace fg {
 				auto& p = edges[*i];
 				if (p.first == sz) {
 					p.first = e.second;
-					fix_edge_rect(rect{ points[p.second], psold }, *i);
+					//fix_edge_rect(rect{ points[p.second], psold }, *i);
 				}
 				else if (p.second == sz) {
 					p.second = e.second;
-					fix_edge_rect(rect{ points[p.first], psold }, *i);
+					//fix_edge_rect(rect{ points[p.first], psold }, *i);
 				}
 			}
 
-			for (auto i{ point_edges[e.first].begin() }; i != point_edges[e.first].end(); i++) {
-				auto& p = edges[*i];
-				if (p.first == e.first) {
-					fix_edge_rect(rect{ points[p.second], pfold }, *i);
-				}
-				else if (p.second == e.first) {
-					fix_edge_rect(rect{ points[p.first], pfold }, *i);
-				}
-			}
+			//for (auto i{ point_edges[e.first].begin() }; i != point_edges[e.first].end(); i++) {
+			//	auto& p = edges[*i];
+			//	if (p.first == e.first) {
+			//		//fix_edge_rect(rect{ points[p.second], pfold }, *i);
+			//	}
+			//	else if (p.second == e.first) {
+			//		//fix_edge_rect(rect{ points[p.first], pfold }, *i);
+			//	}
+			//}
 
 			std::swap(points[e.second], points.back()); points.pop_back();
 
@@ -312,9 +313,9 @@ namespace fg {
 			edges.push_back(std::make_pair(pp0i, pni));
 			point_edges.push_back({ edge, eni, e0ni });
 			point_edges[e.second].erase(edge);
-			rect old_rect{ points[e.first], points[e.second] };
+			//rect old_rect{ points[e.first], points[e.second] };
 			edges[edge].second = pni;
-			fix_edge_rect(old_rect, edge);
+			//fix_edge_rect(old_rect, edge);
 
 			point_edges[e.second].insert(eni);
 			point_edges[pp0i].insert(e0ni);
@@ -335,8 +336,8 @@ namespace fg {
 			triangles.push_back(std::make_tuple(eni, e0ni, et0i));
 			add_triangle_to_tree(triangles.size() - 1);
 
-			add_edge_to_tree(eni);
-			add_edge_to_tree(e0ni);
+			//add_edge_to_tree(eni);
+			//add_edge_to_tree(e0ni);
 			EdgeIndex e1ni = 0xFFFFFFFF;
 			if (t0i != t1i) {
 				e1ni = edges.size();
@@ -372,16 +373,17 @@ namespace fg {
 
 				triangles.push_back(std::make_tuple(eni, e1ni, et1i));
 				add_triangle_to_tree(triangles.size() - 1);
-				add_edge_to_tree(e1ni);
+				//add_edge_to_tree(e1ni);
 			}
 			return std::make_tuple(eni, e0ni, e1ni);
 		}
 		inline std::tuple<size_t, size_t, size_t> triangleVertices(TriangleIndex t) const {
 			auto tr = triangles[t];
-			std::get<0>(tr) = edges[std::get<0>(tr)].first;
-			std::get<1>(tr) = edges[std::get<1>(tr)].first != std::get<0>(tr) ? edges[std::get<1>(tr)].first : edges[std::get<1>(tr)].second;
-			std::get<2>(tr) = (edges[std::get<2>(tr)].first != std::get<0>(tr) && edges[std::get<2>(tr)].first != std::get<1>(tr)) ? edges[std::get<2>(tr)].first : edges[std::get<2>(tr)].second;
-			return tr;
+			size_t v0, v1, v2;
+			v0 = edges[std::get<0>(tr)].first;
+			v1 = edges[std::get<0>(tr)].second;
+			v2 = (edges[std::get<1>(tr)].first != v0 && edges[std::get<1>(tr)].first != v1) ? edges[std::get<1>(tr)].first : edges[std::get<1>(tr)].second;
+			return std::make_tuple(v0, v1, v2);
 		}
 		inline EdgeIndex edgeIndex(TriangleIndex triangle, size_t v0, size_t v1) const {
 			size_t e0, e1, e2;
@@ -650,9 +652,9 @@ namespace fg {
 				point_edges[p2].insert(ne2);
 				point_edges.push_back({ ne0, ne1, ne2 });
 
-				add_edge_to_tree(ne0);
-				add_edge_to_tree(ne1);
-				add_edge_to_tree(ne2);
+				//add_edge_to_tree(ne0);
+				//add_edge_to_tree(ne1);
+				//add_edge_to_tree(ne2);
 
 				out = std::make_tuple(ne0, ne1, ne2);
 				el = element;
@@ -729,7 +731,7 @@ namespace fg {
 		using EdgeLookup = lookup_tree<2, EdgeIndex>;
 
 		std::unique_ptr<TriangleLookup> triangle_lookup;
-		std::unique_ptr<EdgeLookup> edge_lookup;
+		//std::unique_ptr<EdgeLookup> edge_lookup;
 		//std::vector<TriangleIndex> tree_index;
 
 		const Triangle EmptyTriangle = std::make_tuple(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
@@ -768,31 +770,31 @@ namespace fg {
 				add_point(points[edges[std::get<1>(triangles[tri])].second]);
 			triangle_lookup->replace_element_rect(std::make_pair(ro, tri), r);
 		}
-		inline void remove_edge_from_tree(EdgeIndex e) {
-			rect r = rect{ points[edges[e].first],
-				points[edges[e].second] };
-			auto tp = std::make_pair(r, e);
-			if (e == edges.size() - 1) {
-				edge_lookup->remove_element(tp);
-				return;
-			}
-			edge_lookup->replace_element(tp, edges.size() - 1);
-			rect rb = rect{ points[edges.back().first],
-				points[edges.back().second] };
-			edge_lookup->remove_element(std::make_pair(rb, triangles.size() - 1));
-		}
-		inline void add_edge_to_tree(EdgeIndex tri) {
-			rect r = rect{ points[edges[tri].first],
-				points[edges[tri].second] };
-			edge_lookup->add_element(std::make_pair(r, tri));
-		}
-		inline void fix_edge_rect(rect ro, EdgeIndex tri) {
-			/*rect ro = rect{ points[old.first],
-				points[old.second] };*/
-			rect r = rect{ points[edges[tri].first],
-				points[edges[tri].second] };
-			edge_lookup->replace_element_rect(std::make_pair(ro, tri), r);
-		}
+		//inline void remove_edge_from_tree(EdgeIndex e) {
+		//	rect r = rect{ points[edges[e].first],
+		//		points[edges[e].second] };
+		//	auto tp = std::make_pair(r, e);
+		//	if (e == edges.size() - 1) {
+		//		edge_lookup->remove_element(tp);
+		//		return;
+		//	}
+		//	edge_lookup->replace_element(tp, edges.size() - 1);
+		//	rect rb = rect{ points[edges.back().first],
+		//		points[edges.back().second] };
+		//	edge_lookup->remove_element(std::make_pair(rb, triangles.size() - 1));
+		//}
+		//inline void add_edge_to_tree(EdgeIndex tri) {
+		//	rect r = rect{ points[edges[tri].first],
+		//		points[edges[tri].second] };
+		//	edge_lookup->add_element(std::make_pair(r, tri));
+		//}
+		//inline void fix_edge_rect(rect ro, EdgeIndex tri) {
+		//	/*rect ro = rect{ points[old.first],
+		//		points[old.second] };*/
+		//	rect r = rect{ points[edges[tri].first],
+		//		points[edges[tri].second] };
+		//	edge_lookup->replace_element_rect(std::make_pair(ro, tri), r);
+		//}
 	public:
 		const TriangleLookup& lookup() const {
 			return *triangle_lookup;

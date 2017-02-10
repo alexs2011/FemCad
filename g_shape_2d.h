@@ -14,10 +14,14 @@ namespace fg {
 				: Primitive(s, setting, geom) {
 				addSelfToContext();
 			}
-			void RebuildBSP() {
+			void RebuildBSP()
+			{
+				// если уже есть bsp-дерево, то уничтожим его
 				if (bsp) bsp.reset();
+				// сложим в lines все объекты линий из геометрии shape
 				std::vector<ILine*> lines;
 				for (auto i : geometry) lines.emplace_back(&getConstContext().get<ILine>(i));
+				// построим новое дерево BSP
 				bsp = std::make_unique<BSPTree<ILine>>(BSPTree<ILine>(lines));
 			}
 		public:
@@ -86,6 +90,7 @@ namespace fg {
 			}
 
 		public:
+			// копирует объект на контекст
 			virtual GHANDLE instantiate(Scene& s) const {
 				return copy(s);
 			}

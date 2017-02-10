@@ -59,7 +59,9 @@ namespace fg {
 		}
 
 	public:
+		//  возвращает геометрию
 		virtual std::vector<GHANDLE> getBoundary() const { return geometry; }
+		//  возвращает геометрию
 		virtual const std::vector<GHANDLE>& getConstBoundary() const { return geometry; }
 
 		// ITransformable interface

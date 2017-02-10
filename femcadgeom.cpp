@@ -28,8 +28,8 @@ void FemCadGeomTester::Launch()
 	Scene s;
 	SETTINGHANDLE vs = std::make_shared<VertexSetting>(VertexSetting());
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting());
-	ls_1->setParameter("N", DoubleParameter(1));
-	ls_1->setParameter("q", DoubleParameter(1.4));
+	ls_1->setParameter("N", DoubleParameter(2));
+	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting());
 	ls_2->setParameter("N", DoubleParameter(1));
@@ -69,6 +69,8 @@ void FemCadGeomTester::Launch()
 	GHANDLE shape = primitive::Shape(s, ps, s, { l0, l1, l2, l3 }).getHandle();
 	auto& sh = s.get<primitive::Shape>(shape);
 
+	// всё то делает rect - это задаёт противоположные границы геометрии, что нужно для построения сетки
+	// также задает отступы разрядки на всей границе, а также на отдельных её линиях
 	RectView rect{ sh, v0, v1, v2, v3 };
 
 	MeshView2d mesh{ rect };
@@ -82,7 +84,7 @@ void FemCadGeomTester::Launch()
 	std::tuple<size_t, size_t, size_t> out;
 	//mesh.insert_point({ 2.0,0.5,0.0 }, out);
 	//mesh.collapseEdge(12);
-	mesh.SubdivideEdge(18);
+	//mesh.SubdivideEdge(18);
 	int mi = globalMeshDrawer.draw(mesh);
 	
 	globalMeshDrawer.init();

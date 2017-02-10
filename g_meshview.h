@@ -78,7 +78,9 @@ namespace fg {
 			//return std::any_of(geometry.begin(), geometry.end(), [=](_meshLineView x)->bool {return x.pos.count(i) > 0; });
 		}
 		const Mesh2& Mesh() const { return mesh; }
-		MeshView2d(const RectView& r) : mesh(r.mesh()) {
+
+		MeshView2d(const RectView& r) : mesh(r.mesh()) 
+		{
 			std::map<Mesh2::Edge, Mesh2::EdgeIndex> edges;
 			_edgeGeometry.resize(mesh.edgesCount());
 			for (size_t i{}; i < mesh.edges.size(); i++) {
@@ -125,6 +127,10 @@ namespace fg {
 					for (auto i : geoms) {
 						for (size_t j{}; j < new_edges.size(); j++) {
 							if (new_edges[j] == 0xFFFFFFFF) continue;
+#ifdef _DEBUG
+							std::cout << new_edges[j] << ", ";
+#endif
+							auto& m = mesh;
 							auto count = mesh.intersect(static_cast<const EllipticSegment&>(geometry[i].line), new_edges[j], int_points);
 							for (size_t k{}; k < count; k++) int_index.push_back(i);
 						}
@@ -267,6 +273,7 @@ namespace fg {
 				}
 			}
 		}
+
 		void AddLine(const MeshedLine& line) {
 			static std::vector<vector3> int0;
 			static std::vector<vector3> int1;

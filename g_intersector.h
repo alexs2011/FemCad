@@ -1214,38 +1214,33 @@ namespace fg {
 				return ClassificationState::Cross;
 			}
 			else {
-				//auto n = splitter.getNormal();
+				// cr - с какой стороны лежит точка пересечения касательных к дуге, проведённых в точках p0 и p1
 				int cr = splitter.classify(line.getCurve().control_point(p0, p1));
 				return (r == 0) ? (cr == rl ? (ClassificationState)rl : ClassificationState::Cross) : (cr == r ? (ClassificationState)r : ClassificationState::Cross);
-				//int cr = line.getCurve().cross(n, -(n&splitter.P0()));
-				//return (cr == 2) ? ClassificationState::Cross : (r == 0 ? (ClassificationState)rl : (ClassificationState)r);
 			}
 		}
 		static inline ClassificationState _classify(const EllipticSegment& splitter, const EllipticSegment& line) {
 			int r = splitter.classify(line.P0());
 			int rl = splitter.classify(line.P1());
-
-			//_intersect()
 			if (r == -rl) {
 				if (r == 0) return (ClassificationState)splitter.classify(line.middle());
 				return ClassificationState::Cross;
 			}
 			else {
+				// вектор, который перпендикулярен к вектору p1-p0 (не единичной длины) сплиттера
 				auto n = splitter.getNormal();
 				bool v;
 				std::vector<vector3> inter;
-				auto l = square_curve::line(n, -(n&splitter.P0()));
+				// l проходит через p1 и p0
+				auto l = square_curve::line(n, -(n & splitter.P0()));
+				// ищутся пересечения l с line, пересечени записываются в inter
 				line.getCurve().find_intersection(v, l, inter);
+				// если количество пересечений == 2
 				if (inter.size() == 2) {
 					return (line.pointCast(inter[0]) && line.pointCast(inter[1]) && splitter.classify(inter[0]) == 0 && splitter.classify(inter[1]) == 0) ? ClassificationState::Cross :
 						(r == 0 ? (ClassificationState)rl : (ClassificationState)r);
 				}
 				return (r == 0 ? (ClassificationState)rl : (ClassificationState)r);
-				//for (int i = 0; i < inter.size(); i++) {
-				//	int rr = splitter.classify(inter[i]);
-				//	if (rr != 0)
-				//}
-				//return ClassificationState::Cross;
 			}
 		}
 	};

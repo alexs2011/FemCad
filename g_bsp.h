@@ -22,7 +22,6 @@ namespace fg {
 			std::vector<Element*> f, b;
 			// перебираем все линии и классифицируем их: линия лежит на сплиттере (Incident), сзади (Back), спереди (Front)
 			for (auto i : geometry) {
-				//if(i->getHandle() == splitter->getHandle()) conti
 				auto r = splitter->classify(*i);
 				if (r == ClassificationState::Incident) { mid.emplace_back(i); continue; }
 				if (r != ClassificationState::Back) { f.emplace_back(i); }
@@ -32,6 +31,7 @@ namespace fg {
 			if (f.size()) front = std::make_unique<BSPTree<Element>>(BSPTree(f, this));
 			if (b.size()) back = std::make_unique<BSPTree<Element>>(BSPTree(b, this));
 		}
+
 		BSPTree(BSPTree<Element>&&) = default;
 		virtual int classify(const vector3 & p) const override
 		{
