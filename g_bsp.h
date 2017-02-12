@@ -1,33 +1,33 @@
-#pragma once
+п»ї#pragma once
 #include "g_splitter.h"
 namespace fg {
 	//
-	// Рекурсивная структрура данных, задающая дерево BSP-разбиения
+	// Р РµРєСѓСЂСЃРёРІРЅР°СЏ СЃС‚СЂСѓРєС‚СЂСѓСЂР° РґР°РЅРЅС‹С…, Р·Р°РґР°СЋС‰Р°СЏ РґРµСЂРµРІРѕ BSP-СЂР°Р·Р±РёРµРЅРёСЏ
 	//
 	template<class Element>
 	class FEMCADGEOMSHARED_EXPORT BSPTree : public IClassifiable {
-		// некоторое выражение, которое подразбивает пространство на две части
+		// РЅРµРєРѕС‚РѕСЂРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ, РєРѕС‚РѕСЂРѕРµ РїРѕРґСЂР°Р·Р±РёРІР°РµС‚ РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРѕ РЅР° РґРІРµ С‡Р°СЃС‚Рё
 		std::unique_ptr<Splitter<Element>> splitter;
-		// bsp-поддеревья, которые подразбивают пространство спереди и сзади сплиттера
+		// bsp-РїРѕРґРґРµСЂРµРІСЊСЏ, РєРѕС‚РѕСЂС‹Рµ РїРѕРґСЂР°Р·Р±РёРІР°СЋС‚ РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРѕ СЃРїРµСЂРµРґРё Рё СЃР·Р°РґРё СЃРїР»РёС‚С‚РµСЂР°
 		std::unique_ptr<BSPTree<Element>> front, back;
-		// указатель на родительский узел
+		// СѓРєР°Р·Р°С‚РµР»СЊ РЅР° СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ СѓР·РµР»
 		BSPTree<Element>* parent;
-		// линии, которые совпадают со сплиттером (лежат не сзади и не спереди)
+		// Р»РёРЅРёРё, РєРѕС‚РѕСЂС‹Рµ СЃРѕРІРїР°РґР°СЋС‚ СЃРѕ СЃРїР»РёС‚С‚РµСЂРѕРј (Р»РµР¶Р°С‚ РЅРµ СЃР·Р°РґРё Рё РЅРµ СЃРїРµСЂРµРґРё)
 		std::vector<Element*> mid;
 	public:
 		BSPTree(const std::vector<Element*>& geometry, BSPTree<Element>* parent = nullptr) : parent{ parent } {
-			// пока что мы по сути берём первую попавшуюся линию из списка линий и используем её как сплиттер
+			// РїРѕРєР° С‡С‚Рѕ РјС‹ РїРѕ СЃСѓС‚Рё Р±РµСЂС‘Рј РїРµСЂРІСѓСЋ РїРѕРїР°РІС€СѓСЋСЃСЏ Р»РёРЅРёСЋ РёР· СЃРїРёСЃРєР° Р»РёРЅРёР№ Рё РёСЃРїРѕР»СЊР·СѓРµРј РµС‘ РєР°Рє СЃРїР»РёС‚С‚РµСЂ
 			pickSplitter(geometry);
 			// f- front, b - back
 			std::vector<Element*> f, b;
-			// перебираем все линии и классифицируем их: линия лежит на сплиттере (Incident), сзади (Back), спереди (Front)
+			// РїРµСЂРµР±РёСЂР°РµРј РІСЃРµ Р»РёРЅРёРё Рё РєР»Р°СЃСЃРёС„РёС†РёСЂСѓРµРј РёС…: Р»РёРЅРёСЏ Р»РµР¶РёС‚ РЅР° СЃРїР»РёС‚С‚РµСЂРµ (Incident), СЃР·Р°РґРё (Back), СЃРїРµСЂРµРґРё (Front)
 			for (auto i : geometry) {
 				auto r = splitter->classify(*i);
 				if (r == ClassificationState::Incident) { mid.emplace_back(i); continue; }
 				if (r != ClassificationState::Back) { f.emplace_back(i); }
 				if (r != ClassificationState::Front) { b.emplace_back(i); }
 			}
-			// и кладем их в соответствующие поддеревья
+			// Рё РєР»Р°РґРµРј РёС… РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёРµ РїРѕРґРґРµСЂРµРІСЊСЏ
 			if (f.size()) front = std::make_unique<BSPTree<Element>>(BSPTree(f, this));
 			if (b.size()) back = std::make_unique<BSPTree<Element>>(BSPTree(b, this));
 		}
@@ -57,11 +57,11 @@ namespace fg {
 		}
 	protected:
 		void pickSplitter(const std::vector<Element*>& geometry) {
-			// пока что мы по сути берём первую попавшуюся линию и используем её как сплиттер
+			// РїРѕРєР° С‡С‚Рѕ РјС‹ РїРѕ СЃСѓС‚Рё Р±РµСЂС‘Рј РїРµСЂРІСѓСЋ РїРѕРїР°РІС€СѓСЋСЃСЏ Р»РёРЅРёСЋ Рё РёСЃРїРѕР»СЊР·СѓРµРј РµС‘ РєР°Рє СЃРїР»РёС‚С‚РµСЂ
 			for (auto i : geometry) {
-				// сплиттер копирует линию в себя
+				// СЃРїР»РёС‚С‚РµСЂ РєРѕРїРёСЂСѓРµС‚ Р»РёРЅРёСЋ РІ СЃРµР±СЏ
 				Splitter<Element> s{ *i };
-				// что такое special ???
+				// С‡С‚Рѕ С‚Р°РєРѕРµ special ???
 				if (!s.special()) { splitter = std::make_unique<Splitter<Element>>(std::move(s)); return; }
 			}
 			splitter = std::make_unique<Splitter<Element>>(Splitter<Element>{ *geometry.back() });

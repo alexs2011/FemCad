@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #define _USE_MATH_DEFINES
 
@@ -329,8 +329,8 @@ namespace fg {
 			return result;
 		}
 
-		// определеяет, с какой стороны плоскости находится точка
-		// 0 - на плоскости, 1 - спереди, -1 - сзади
+		// РѕРїСЂРµРґРµР»РµВ¤РµС‚, СЃ РєР°РєРѕР№ СЃС‚РѕСЂРѕРЅС‹ РїР»РѕСЃРєРѕСЃС‚Рё РЅР°С…РѕРґРёС‚СЃВ¤ С‚РѕС‡РєР°
+		// 0 - РЅР° РїР»РѕСЃРєРѕСЃС‚Рё, 1 - СЃРїРµСЂРµРґРё, -1 - СЃР·Р°РґРё
 		inline int classify(const vector3& p) const {
 			double test = (p - p0)&n;
 			if (test < -FG_EPS) return -1;
@@ -929,13 +929,18 @@ namespace fg {
 		lookup_tree(size_t max_depth, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max) :
 			lookup_tree(max_depth, std::max(100U, (size_t)std::sqrt(rectangles.size()) + 10), std::move(rectangles), min, max, max_depth) {
 		}
-		lookup_tree(size_t depth, size_t max_elements, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max, const size_t max_depth) : Mx{ max_elements }, max_depth{ max_depth } {
+		lookup_tree(size_t depth, size_t max_elements, std::vector<std::pair<rect, T>>&& rectangles,
+			        const vector3& min, const vector3& max, const size_t max_depth)
+			        : Mx{ max_elements }, max_depth{ max_depth } 
+		{
 			if (rectangles.size() < Mx || depth <= 0) {
 				container = rectangles; return;
 			}
 			std::vector<std::pair<rect, T>> front, back;
+			// РјРёРЅ Рё РјР°РєСЃ - РєРѕРѕСЂРґРёРЅР°С‚С‹ РІРµСЂС€РёРЅ РѕРіСЂР°РЅРёРёРІР°СЋС‰РµРіРѕ РїСЂВ¤РјРѕСѓРіРѕР»СЊРЅРёРєР°, РІ РєРѕС‚РѕСЂС‹Р№ РІС…РѕРґРёС‚ РІРµСЃСЊ РїСЂРёРјРёС‚РёРІ
 			minimum = min;
 			maximum = max;
+			// СѓСЃСЂРµРґРЅВ¤РµРј РєРѕРѕСЂРґРёРЅР°С‚С‹ С… РІРµСЂС€РёРЅ РјРёРЅ Рё РјР°РєСЃ РѕРіСЂР°РЅРёС‡РёРІР°СЋС‰РµРіРѕ РїСЂВ¤РјРѕСѓРіРѕР»СЊРЅРёРєР°
 			double midaxis = 0.5 * (minimum[plane] + maximum[plane]);
 			for (size_t i = 0U; i < rectangles.size(); i++) {
 				auto c = rectangles[i].first.classify_by<plane>(midaxis);
@@ -947,7 +952,8 @@ namespace fg {
 			if (back.size()) s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(back), min, nmax, max_depth)));
 			if (front.size()) s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(front), nmin, max, max_depth)));
 		}
-		// находит все элементы дерева, которые пересекаются с данным прямоугольником
+
+		// РЅР°С…РѕРґРёС‚ РІСЃРµ СЌР»РµРјРµРЅС‚С‹ РґРµСЂРµРІР°, РєРѕС‚РѕСЂС‹Рµ РїРµСЂРµСЃРµРєР°СЋС‚СЃВ¤ СЃ РґР°РЅРЅС‹Рј РїСЂВ¤РјРѕСѓРіРѕР»СЊРЅРёРєРѕРј
 		void get_overlap(const rect& r, std::set<T>& output) const {
 			if (s[0]) s[0]->get_overlap(r, output);
 			if (s[1]) s[1]->get_overlap(r, output);
@@ -1048,7 +1054,7 @@ namespace fg {
 		}
 	};
 
-	// класс, задающий уравнение окружности
+	// РєР»Р°СЃСЃ, Р·Р°РґР°СЋС‰РёР№ СѓСЂР°РІРЅРµРЅРёРµ РѕРєСЂСѓР¶РЅРѕСЃС‚Рё
 	class FEMCADGEOMSHARED_EXPORT square_curve {
 	public:
 		// a * x2 + b * y2 + c * x * y + d * x + e * y + f = 0
@@ -1074,7 +1080,7 @@ namespace fg {
 		//}
 		//
 
-		// точка пересечения касательных к дуге, проведённых в точках p0 и p1
+		// С‚РѕС‡РєР° РїРµСЂРµСЃРµС‡РµРЅРёВ¤ РєР°СЃР°С‚РµР»СЊРЅС‹С… Рє РґСѓРіРµ, РїСЂРѕРІРµРґР„РЅРЅС‹С… РІ С‚РѕС‡РєР°С… p0 Рё p1
 		vector3 control_point(const vector3& p0, const vector3& p1) {
 			double dy0 = 2.0*a*p0.x + c*p0.y + d;
 			double dy1 = 2.0*a*p1.x + c*p1.y + d;

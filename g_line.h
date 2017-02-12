@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "stdafx.h"
 #include "g_common_interface.h"
 #include "g_geometry.h"
@@ -51,7 +51,7 @@ namespace fg {
 			if (o == _p0) _p0 = n;
 			if (o == _p1) _p1 = n;
 		}
-		// возвращает наало и конец линии
+		// РІРѕР·РІСЂР°С‰Р°РµС‚ РЅР°Р°Р»Рѕ Рё РєРѕРЅРµС† Р»РёРЅРёРё
 		virtual std::vector<GHANDLE> getChildren() const { return{ _p0, _p1 }; }
 		virtual void applyTransform(const matrix4x4& m) = 0;
 		virtual std::vector<GHANDLE> getBoundary() const { return{ _p0, _p1 }; }
@@ -283,14 +283,14 @@ namespace fg {
 			//return _curve.getTransformed(getInversedTransform());
 		}
 
-		// определяет, что точка лежит на границе сегмента
+		// РѕРїСЂРµРґРµР»СЏРµС‚, С‡С‚Рѕ С‚РѕС‡РєР° Р»РµР¶РёС‚ РЅР° РіСЂР°РЅРёС†Рµ СЃРµРіРјРµРЅС‚Р°
 		virtual bool pointCast(const vector3 &v)const {
 			if (classify(v) != 0) return false;
-			// центр окружности
+			// С†РµРЅС‚СЂ РѕРєСЂСѓР¶РЅРѕСЃС‚Рё
 			vector3 cp = Center();
 			vector3 cp0 = P0() - cp;
 			vector3 cp1 = P1() - cp;
-			// определяется, в каком порядке p0 и p1 пробегаются по окружности
+			// РѕРїСЂРµРґРµР»СЏРµС‚СЃСЏ, РІ РєР°РєРѕРј РїРѕСЂСЏРґРєРµ p0 Рё p1 РїСЂРѕР±РµРіР°СЋС‚СЃСЏ РїРѕ РѕРєСЂСѓР¶РЅРѕСЃС‚Рё
 			double sign = (cp0 ^ cp1).z;
 			vector3 cv = v - cp;
 			return (cv ^ cp0).z * sign < FG_EPS && sign * (cv ^ cp1).z > -FG_EPS;
@@ -387,7 +387,7 @@ namespace fg {
 			vector3 n = (pt1 - pt0) ^ vector3::Z();
 			n.normalize();
 			auto c = Center();
-			double dot = (c - pt0) & n; // + внутрь
+			double dot = (c - pt0) & n; // + РІРЅСѓС‚СЂСЊ
 			auto curv = getCurve().classify(pp);
 			auto ddot = n & (pp - pt0);
 			//if (curv == 0 && ddot * dot < 0.0f) return 0; // on _curve
@@ -404,7 +404,7 @@ namespace fg {
 			return -1;
 			//return (dot > 0 ? -1 : 1) * (curv < 0 ? -1 : (curv == 0 ? (ddot > -FG_EPS ? 0 : -1) : (ddot < -FG_EPS ? -1 : (ddot > FG_EPS ? 1 : 0))));
 		}
-		// middle - это точка, которая лежит на середне дуги между её началом и концом
+		// middle - СЌС‚Рѕ С‚РѕС‡РєР°, РєРѕС‚РѕСЂР°СЏ Р»РµР¶РёС‚ РЅР° СЃРµСЂРµРґРЅРµ РґСѓРіРё РјРµР¶РґСѓ РµС‘ РЅР°С‡Р°Р»РѕРј Рё РєРѕРЅС†РѕРј
 		virtual vector3 middle() const {
 			return getCurve().get_point(0.5, P0(), P1());
 			//return getTransform() * (0.5 * (localP0() + localP1()).getNormalized() * Radius());

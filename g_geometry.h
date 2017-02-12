@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "stdafx.h"
 #include "fg_math.h"
 #include "g_setting.h"
@@ -9,17 +9,17 @@ namespace fg {
 
 	class FEMCADGEOMSHARED_EXPORT IClassifiable {
 	public:
-		// лежит ли точка p в этой геометрии (объекте)
-		// какие значения возвращает ???
+		// Р»РµР¶РёС‚ Р»Рё С‚РѕС‡РєР° p РІ СЌС‚РѕР№ РіРµРѕРјРµС‚СЂРёРё (РѕР±СЉРµРєС‚Рµ)
+		// РєР°РєРёРµ Р·РЅР°С‡РµРЅРёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ ???
 		virtual int classify(const vector3& p) const = 0;
-		// возвращает среднюю точку геометрии
+		// РІРѕР·РІСЂР°С‰Р°РµС‚ СЃСЂРµРґРЅСЋСЋ С‚РѕС‡РєСѓ РіРµРѕРјРµС‚СЂРёРё
 		virtual vector3 middle() const = 0;
 	};
 
 	class IGeometry : public IClassifiable, public IComparable<IGeometry>
 	{
 	protected:
-		// что за контекст ???
+		// С‡С‚Рѕ Р·Р° РєРѕРЅС‚РµРєСЃС‚ ???
 		virtual void addSelfToContext() = 0;
 	public:
 		virtual bool update() = 0;
@@ -30,17 +30,17 @@ namespace fg {
 		virtual GHANDLE copy() const = 0;
 		virtual GHANDLE copy(Scene& context) const = 0;
 		virtual inline GHANDLE getHandle() const = 0;
-		// вернуть прямоугольник, ограничивающий геометрию
+		// РІРµСЂРЅСѓС‚СЊ РїСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРє, РѕРіСЂР°РЅРёС‡РёРІР°СЋС‰РёР№ РіРµРѕРјРµС‚СЂРёСЋ
 		virtual inline rect getBoundingRect() const = 0;
 		virtual inline SETTINGHANDLE getSetting() const = 0;
 		virtual inline std::vector<GHANDLE> getBoundary() const = 0;
 		virtual inline double getDistance(const ray& v) const = 0;
-		// лежит ли геометрия в плоскости ???
+		// Р»РµР¶РёС‚ Р»Рё РіРµРѕРјРµС‚СЂРёСЏ РІ РїР»РѕСЃРєРѕСЃС‚Рё ???
 		virtual inline bool isInPlane(const plane& p) const = 0;
 		virtual inline void applyTransform(const matrix4x4& m) = 0;
 	};
 
-	// суперкласс, от которого наследуются: вершина, линия, прямоуголник, кривая... ???
+	// СЃСѓРїРµСЂРєР»Р°СЃСЃ, РѕС‚ РєРѕС‚РѕСЂРѕРіРѕ РЅР°СЃР»РµРґСѓСЋС‚СЃСЏ: РІРµСЂС€РёРЅР°, Р»РёРЅРёСЏ, РїСЂСЏРјРѕСѓРіРѕР»РЅРёРє, РєСЂРёРІР°СЏ... ???
 	class FEMCADGEOMSHARED_EXPORT Geometry : public IGeometry
 	{
 	protected:
@@ -63,7 +63,7 @@ namespace fg {
 			_context(context),
 			_handle{NoGeometry}
 		{}
-		// move-конструктор
+		// move-РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
 		Geometry(Geometry &&g) = default;
 	public:
 		virtual SETTINGHANDLE getSetting() const { return _setting; }

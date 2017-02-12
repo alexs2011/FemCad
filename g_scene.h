@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "stdafx.h"
 #include "g_geometry.h"
 #include "g_transformation.h"
@@ -11,9 +11,9 @@ namespace fg {
 		static int ID;
 		friend class FEMCADGEOMSHARED_EXPORT IGeometry;
 		int id;
-		// все вершины, отрезки, кривые, фигуры, которые входт в сцену
+		// РІСЃРµ РІРµСЂС€РёРЅС‹, РѕС‚СЂРµР·РєРё, РєСЂРёРІС‹Рµ, С„РёРіСѓСЂС‹, РєРѕС‚РѕСЂС‹Рµ РІС…РѕРґС‚ РІ СЃС†РµРЅСѓ
 		std::vector<std::unique_ptr<IGeometry>> geometry;
-		// для каждого хэндлера объекта указываются хэндлеры объектов, в которые он входит
+		// РґР»СЏ РєР°Р¶РґРѕРіРѕ С…СЌРЅРґР»РµСЂР° РѕР±СЉРµРєС‚Р° СѓРєР°Р·С‹РІР°СЋС‚СЃСЏ С…СЌРЅРґР»РµСЂС‹ РѕР±СЉРµРєС‚РѕРІ, РІ РєРѕС‚РѕСЂС‹Рµ РѕРЅ РІС…РѕРґРёС‚
 		std::vector<std::set<GHANDLE>> ownership;
 		TransformRoot root;
 	public:
@@ -52,21 +52,21 @@ namespace fg {
 			//geometry.back()->init();
 			return geometry.back()->init();
 		}
-		// зачем-то передаем не только объект, но и его геометрию, хотя она в нём и так есть в качестве поля ???
+		// Р·Р°С‡РµРј-С‚Рѕ РїРµСЂРµРґР°РµРј РЅРµ С‚РѕР»СЊРєРѕ РѕР±СЉРµРєС‚, РЅРѕ Рё РµРіРѕ РіРµРѕРјРµС‚СЂРёСЋ, С…РѕС‚СЏ РѕРЅР° РІ РЅС‘Рј Рё С‚Р°Рє РµСЃС‚СЊ РІ РєР°С‡РµСЃС‚РІРµ РїРѕР»СЏ ???
 		template<class T>
 		GHANDLE add(T&& object, std::vector<GHANDLE> children)
 		{
 			static_assert(std::is_base_of<IGeometry, T>::value, "Can't add non IGeometry type object");
-			geometry.emplace_back(std::make_unique<T>(std::move(object))); // кладем объект в конец массива геометрии сцены
+			geometry.emplace_back(std::make_unique<T>(std::move(object))); // РєР»Р°РґРµРј РѕР±СЉРµРєС‚ РІ РєРѕРЅРµС† РјР°СЃСЃРёРІР° РіРµРѕРјРµС‚СЂРёРё СЃС†РµРЅС‹
 			geometry.back()->setHandle(geometry.size() - 1);
-			// добавляемый объект не входит не в один другой объект
+			// РґРѕР±Р°РІР»СЏРµРјС‹Р№ РѕР±СЉРµРєС‚ РЅРµ РІС…РѕРґРёС‚ РЅРµ РІ РѕРґРёРЅ РґСЂСѓРіРѕР№ РѕР±СЉРµРєС‚
 			ownership.push_back(std::set<GHANDLE>());
-			// наследники добавляемого объекта входят в добавляемй объект
+			// РЅР°СЃР»РµРґРЅРёРєРё РґРѕР±Р°РІР»СЏРµРјРѕРіРѕ РѕР±СЉРµРєС‚Р° РІС…РѕРґСЏС‚ РІ РґРѕР±Р°РІР»СЏРµРјР№ РѕР±СЉРµРєС‚
 			for (auto i = children.begin(); i != children.end(); ++i) {
 				if (ownership[*i].count(geometry.size() - 1) == 0)
 					ownership[*i].insert(geometry.size() - 1);
 			}
-			// инициализируем добавленный в сцену объект и вернём его хэндлер
+			// РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј РґРѕР±Р°РІР»РµРЅРЅС‹Р№ РІ СЃС†РµРЅСѓ РѕР±СЉРµРєС‚ Рё РІРµСЂРЅС‘Рј РµРіРѕ С…СЌРЅРґР»РµСЂ
 			return geometry.back()->init();
 		}
 

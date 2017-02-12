@@ -1,9 +1,9 @@
-#include "stdafx.h"
+п»ї#include "stdafx.h"
 #include "g_utility.h"
 namespace fg {
-	// получить объект, созданный с помощью CSG операции, примененной к двум примитивам
+	// РїРѕР»СѓС‡РёС‚СЊ РѕР±СЉРµРєС‚, СЃРѕР·РґР°РЅРЅС‹Р№ СЃ РїРѕРјРѕС‰СЊСЋ CSG РѕРїРµСЂР°С†РёРё, РїСЂРёРјРµРЅРµРЅРЅРѕР№ Рє РґРІСѓРј РїСЂРёРјРёС‚РёРІР°Рј
 	GHANDLE fg::GeometryUtility::ApplyCSG(Scene & context, CSGOperation op, const Primitive & primitive0, const Primitive & primitive1) {
-		// как это работает? комментарии ???
+		// РєР°Рє СЌС‚Рѕ СЂР°Р±РѕС‚Р°РµС‚? РєРѕРјРјРµРЅС‚Р°СЂРёРё ???
 		Scene resultContext;
 		Scene tempContext;
 		std::unique_ptr<Lookup> tree0;
@@ -13,19 +13,19 @@ namespace fg {
 
 		bounds.reserve(std::max(Shape0.getConstBoundary().size(), Shape1.getConstBoundary().size()));
 		rect whole;
-		// соответствие между линиями и точками на линиях
+		// СЃРѕРѕС‚РІРµС‚СЃС‚РІРёРµ РјРµР¶РґСѓ Р»РёРЅРёСЏРјРё Рё С‚РѕС‡РєР°РјРё РЅР° Р»РёРЅРёСЏС…
 		std::map<const ILine*, std::vector<GHANDLE>> points_on_lines0, points_on_lines1;
 		std::map<vector3, GHANDLE> points;
 		//std::vector<vector3> point_array;
 		int last_p = 0;
-		// Построение квадродерева
+		// РџРѕСЃС‚СЂРѕРµРЅРёРµ РєРІР°РґСЂРѕРґРµСЂРµРІР°
 		auto boundary = Shape0.getConstBoundary();
 		for (size_t i = 0; i < boundary.size(); i++) {
 			auto line = dynamic_cast<ILine*>(Shape0.getConstContext().get_ptr(boundary[i]));
 			for (auto j : line->getChildren()) {
-				// перенос точек на новый контекст
+				// РїРµСЂРµРЅРѕСЃ С‚РѕС‡РµРє РЅР° РЅРѕРІС‹Р№ РєРѕРЅС‚РµРєСЃС‚
 				auto& point = Shape0.getConstContext().get<Vertex>(j).position();
-				// если уже добавлена, не добавлять
+				// РµСЃР»Рё СѓР¶Рµ РґРѕР±Р°РІР»РµРЅР°, РЅРµ РґРѕР±Р°РІР»СЏС‚СЊ
 				if (points.count(point) == 0) {
 					points[point] = Vertex(resultContext, resultContext.defaultVertex, point).getHandle();
 				}
@@ -36,25 +36,27 @@ namespace fg {
 			//if (points.count(p0) == 0) { points[p0] = Vertex(resultContext, resultContext.defaultVertex, p0).getHandle(); }
 			//if (points.count(p1) == 0) { points[p1] = Vertex(resultContext, resultContext.defaultVertex, p1).getHandle(); }
 
-			// вокруг линий строятся ограничивающие объекты (прямоугольники)
+			// РІРѕРєСЂСѓРі Р»РёРЅРёР№ СЃС‚СЂРѕСЏС‚СЃСЏ РѕРіСЂР°РЅРёС‡РёРІР°СЋС‰РёРµ РѕР±СЉРµРєС‚С‹ (РїСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРєРё)
 			points_on_lines0[line].insert(std::end(points_on_lines0[line]), { points[p0], points[p1] });
 			auto box = line->getBoundingRect();
 			bounds.push_back(std::make_pair(box, line->getHandle()));
+			// СѓРІРµР»РёС‡РёРІР°СЋС‚СЃСЏ СЂР°Р·РјРµСЂС‹ РѕР±Р»Р°СЃС‚Рё, РІ РєРѕС‚РѕСЂРѕР№ Р»РµР¶Р°С‚ РѕР±СЉРµРєС‚С‹
 			whole = whole.add_rect(box);
 		}
+		// РґРµСЂРµРІРѕ РґСЂРѕР±РёС‚ РѕР±Р»Р°СЃС‚Рё РІ РєРѕС‚РѕСЂРѕС‹С… РµСЃС‚СЊ РѕР±СЉРµРєС‚С‹ РЅР° 4 РїРѕРґРѕР±Р»Р°СЃС‚Рё РґРѕ С‚РµС… РїРѕСЂ, РїРѕРєР° РІ СЌС‚РёС… РїРѕРґРѕР±Р»Р°СЃС‚СЏС… РёРјРµСЋС‚СЃСЏ РѕР±СЉРµРєС‚С‹
 		tree0 = std::make_unique<Lookup>(Lookup(100, std::move(bounds), whole.Min(), whole.Max()));
 
 		std::set<GHANDLE> geoms;
 		std::vector<vector3> p0;
 		std::vector<vector3> p1;
 		p0.reserve(4); p1.reserve(4);
-		// Нахождение пересечений
+		// РќР°С…РѕР¶РґРµРЅРёРµ РїРµСЂРµСЃРµС‡РµРЅРёР№
 		for (size_t i = 0; i < Shape1.getConstBoundary().size(); i++) {
 			auto line = dynamic_cast<ILine*>(Shape1.getConstContext().get_ptr(Shape1.getConstBoundary()[i]));
-			// перенос точек на новый контекст
+			// РїРµСЂРµРЅРѕСЃ С‚РѕС‡РµРє РЅР° РЅРѕРІС‹Р№ РєРѕРЅС‚РµРєСЃС‚
 			for (auto j : line->getChildren()) {
 				auto& point = Shape1.getConstContext().get<Vertex>(j).position();
-				// если уже добавлена, не добавлять
+				// РµСЃР»Рё СѓР¶Рµ РґРѕР±Р°РІР»РµРЅР°, РЅРµ РґРѕР±Р°РІР»СЏС‚СЊ
 				if (points.count(point) == 0) { points[point] = Vertex(resultContext, resultContext.defaultVertex, point).getHandle(); }
 			}
 			auto pp0 = line->P0();
@@ -65,7 +67,7 @@ namespace fg {
 			auto box = line->getBoundingRect();
 			tree0->get_overlap(box, geoms);
 			for (auto j : geoms) {
-				// находим точки пересечения
+				// РЅР°С…РѕРґРёРј С‚РѕС‡РєРё РїРµСЂРµСЃРµС‡РµРЅРёСЏ
 				auto l = dynamic_cast<ILine*>(Shape0.getConstContext().get_ptr(j));
 				auto ir = Intersector<ILine>::intersect_dynamic(p0, p1, *line, *l);
 				for (auto k : p0) {
@@ -83,26 +85,26 @@ namespace fg {
 		}
 		std::vector<GHANDLE> lines0, lines1;
 
-		// Построение субсегментов (раздробить геометрию найденными точками пересечения)
-		// m - все точки на текущей форме
-		// flip - если true, то результирующие линии будут развернуты относительно линий в m (только для опер. разность) 
+		// РџРѕСЃС‚СЂРѕРµРЅРёРµ СЃСѓР±СЃРµРіРјРµРЅС‚РѕРІ (СЂР°Р·РґСЂРѕР±РёС‚СЊ РіРµРѕРјРµС‚СЂРёСЋ РЅР°Р№РґРµРЅРЅС‹РјРё С‚РѕС‡РєР°РјРё РїРµСЂРµСЃРµС‡РµРЅРёСЏ)
+		// m - РІСЃРµ С‚РѕС‡РєРё РЅР° С‚РµРєСѓС‰РµР№ С„РѕСЂРјРµ
+		// flip - РµСЃР»Рё true, С‚Рѕ СЂРµР·СѓР»СЊС‚РёСЂСѓСЋС‰РёРµ Р»РёРЅРёРё Р±СѓРґСѓС‚ СЂР°Р·РІРµСЂРЅСѓС‚С‹ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ Р»РёРЅРёР№ РІ m (С‚РѕР»СЊРєРѕ РґР»СЏ РѕРїРµСЂ. СЂР°Р·РЅРѕСЃС‚СЊ) 
 		auto func = [&](std::vector<GHANDLE>& result, std::map<const ILine*, std::vector<GHANDLE>>& m, bool flip) {
-			// временный массив соответствия точкам их хендлам. Нужен для сортировки точек вдоль линии
+			// РІСЂРµРјРµРЅРЅС‹Р№ РјР°СЃСЃРёРІ СЃРѕРѕС‚РІРµС‚СЃС‚РІРёСЏ С‚РѕС‡РєР°Рј РёС… С…РµРЅРґР»Р°Рј. РќСѓР¶РµРЅ РґР»СЏ СЃРѕСЂС‚РёСЂРѕРІРєРё С‚РѕС‡РµРє РІРґРѕР»СЊ Р»РёРЅРёРё
 			static std::vector<std::pair<vector3, GHANDLE>> sorter;
 			sorter.reserve(16);
 			for (auto i : m) {
 				sorter.clear();
-				// множество точек на текущей линии
+				// РјРЅРѕР¶РµСЃС‚РІРѕ С‚РѕС‡РµРє РЅР° С‚РµРєСѓС‰РµР№ Р»РёРЅРёРё
 				std::set<GHANDLE> s(std::begin(i.second), std::end(i.second));
 				for (auto j : s) { sorter.push_back(std::make_pair(resultContext.get<Vertex>(j).position(), j)); }
 				//i.second = std::vector<GHANDLE>(std::begin(s), std::end(s));
-				// сортирует точки вдоль линии i
+				// СЃРѕСЂС‚РёСЂСѓРµС‚ С‚РѕС‡РєРё РІРґРѕР»СЊ Р»РёРЅРёРё i
 				i.first->sortAlong(sorter);
 				i.second.resize(sorter.size());
 				for (size_t j = 0; j < sorter.size(); j++) {
 					i.second[j] = sorter[j].second;
 				}
-				// создаем сегменты
+				// СЃРѕР·РґР°РµРј СЃРµРіРјРµРЅС‚С‹
 				auto seg = dynamic_cast<const LineSegment*>(i.first);
 				if (seg) {
 					for (size_t j = 0U; j < i.second.size() - 1; j++)
@@ -119,10 +121,10 @@ namespace fg {
 		func(lines1, points_on_lines1, op == CSGOperation::Subtract);
 
 		std::vector<GHANDLE> result;
-		// КСГ
+		// РљРЎР“
 		for (auto i : lines0) {
 			auto c = resultContext.get<ILine>(i).middle();
-			// определяем, где находится линия относительно второго объекта
+			// РѕРїСЂРµРґРµР»СЏРµРј, РіРґРµ РЅР°С…РѕРґРёС‚СЃСЏ Р»РёРЅРёСЏ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ РІС‚РѕСЂРѕРіРѕ РѕР±СЉРµРєС‚Р°
 			int seconds = Shape1.classify(c);
 			if (op == CSGOperation::Union || op == CSGOperation::Subtract) {
 				if (seconds > 0) result.push_back(i); continue;
@@ -142,7 +144,7 @@ namespace fg {
 				if (seconds < 0) result.push_back(i); continue;
 			}
 		}
-		// Удаление копий
+		// РЈРґР°Р»РµРЅРёРµ РєРѕРїРёР№
 		tempContext.remove(Shape0.getHandle());
 		tempContext.remove(Shape1.getHandle());
 		auto resultShape = resultContext.get<primitive::Shape>(fg::primitive::Shape(resultContext, primitive0.getSetting(), resultContext, result).getHandle()).instantiate(context);

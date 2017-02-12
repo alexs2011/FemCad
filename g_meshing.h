@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "stdafx.h"
 #include "fg_math.h"
 #include "g_intersector.h"
@@ -56,7 +56,7 @@ namespace fg {
 			size_t p{};
 			edges.resize(all_edges.size());
 			edge_triangles.resize(all_edges.size());
-			// дерево для поиска тр-ков
+			// РґРµСЂРµРІРѕ РґР»СЏ РїРѕРёСЃРєР° С‚СЂ-РєРѕРІ
 			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
 			rects.clear();
 			for (auto& i : all_edges) {

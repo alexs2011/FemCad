@@ -1,12 +1,12 @@
-#include "stdafx.h"
+п»ї#include "stdafx.h"
 #include "g_utility.h"
 #include "g_shape_2d.h"
 
 ///
-/// конструктор фигуры, т.е. полигона
-/// Scene & s - та сцена, в которую будет добавлена новая фигура
-/// lines_context - та сцена, в которой лежат добавляемые отрезки
-/// const std::vector<GHANDLE>& lines - отрезки, из которых будет состоять новая фигура
+/// РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ С„РёРіСѓСЂС‹, С‚.Рµ. РїРѕР»РёРіРѕРЅР°
+/// Scene & s - С‚Р° СЃС†РµРЅР°, РІ РєРѕС‚РѕСЂСѓСЋ Р±СѓРґРµС‚ РґРѕР±Р°РІР»РµРЅР° РЅРѕРІР°СЏ С„РёРіСѓСЂР°
+/// lines_context - С‚Р° СЃС†РµРЅР°, РІ РєРѕС‚РѕСЂРѕР№ Р»РµР¶Р°С‚ РґРѕР±Р°РІР»СЏРµРјС‹Рµ РѕС‚СЂРµР·РєРё
+/// const std::vector<GHANDLE>& lines - РѕС‚СЂРµР·РєРё, РёР· РєРѕС‚РѕСЂС‹С… Р±СѓРґРµС‚ СЃРѕСЃС‚РѕСЏС‚СЊ РЅРѕРІР°СЏ С„РёРіСѓСЂР°
 ///
 fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lines_context, const std::vector<GHANDLE>& lines)
 	: Primitive(s, setting)
@@ -19,31 +19,31 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 		auto ii = lines_context.get_ptr(i);
 		ILine *l;
 		if (!(l = dynamic_cast<ILine*>(ii))) throw std::logic_error("Trying to create polygon from not line object");
-		// Хэндлеру начала отрезка ставится в соответствие пара номер отрезка и false/true
+		// РҐСЌРЅРґР»РµСЂСѓ РЅР°С‡Р°Р»Р° РѕС‚СЂРµР·РєР° СЃС‚Р°РІРёС‚СЃСЏ РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІРёРµ РїР°СЂР° РЅРѕРјРµСЂ РѕС‚СЂРµР·РєР° Рё false/true
 		allLines.insert(std::make_pair((l->p0Handle()), std::make_pair(i, false)));
 		allLines.insert(std::make_pair((l->p1Handle()), std::make_pair(i, true)));
-		// подсчитаем количество владельцев каждого начала и конца отрезка, чтобы определить, замкнутый ли полигон
+		// РїРѕРґСЃС‡РёС‚Р°РµРј РєРѕР»РёС‡РµСЃС‚РІРѕ РІР»Р°РґРµР»СЊС†РµРІ РєР°Р¶РґРѕРіРѕ РЅР°С‡Р°Р»Р° Рё РєРѕРЅС†Р° РѕС‚СЂРµР·РєР°, С‡С‚РѕР±С‹ РѕРїСЂРµРґРµР»РёС‚СЊ, Р·Р°РјРєРЅСѓС‚С‹Р№ Р»Рё РїРѕР»РёРіРѕРЅ
 		vertexOwners[l->p0Handle()] = (vertexOwners.count(l->p0Handle())) ? vertexOwners[l->p0Handle()] + 1 : 1;
 		vertexOwners[l->p1Handle()] = (vertexOwners.count(l->p1Handle())) ? vertexOwners[l->p1Handle()] + 1 : 1;
 		auto c = ii->getChildren();
 		verts.insert(c.begin(), c.end());
 	}
-	// замкнутый ли полигон
+	// Р·Р°РјРєРЅСѓС‚С‹Р№ Р»Рё РїРѕР»РёРіРѕРЅ
 	for (auto i : vertexOwners) {
 		if (i.second != 2) 
 			throw FGException("Error! Unclosed or non CSG polygon!");
 	}
 
 	//
-	// Развернем все отрезки так, чтобы их направление обхода полигона совпадало
+	// Р Р°Р·РІРµСЂРЅРµРј РІСЃРµ РѕС‚СЂРµР·РєРё С‚Р°Рє, С‡С‚РѕР±С‹ РёС… РЅР°РїСЂР°РІР»РµРЅРёРµ РѕР±С…РѕРґР° РїРѕР»РёРіРѕРЅР° СЃРѕРІРїР°РґР°Р»Рѕ
 	//
-	// выберем первый отрезок из добавляемых
+	// РІС‹Р±РµСЂРµРј РїРµСЂРІС‹Р№ РѕС‚СЂРµР·РѕРє РёР· РґРѕР±Р°РІР»СЏРµРјС‹С…
 	GHANDLE last = lines[0];
-	// вытащим этот отрезок из изначальной сцены
+	// РІС‹С‚Р°С‰РёРј СЌС‚РѕС‚ РѕС‚СЂРµР·РѕРє РёР· РёР·РЅР°С‡Р°Р»СЊРЅРѕР№ СЃС†РµРЅС‹
 	ILine * ll = static_cast<ILine*>(lines_context.get_ptr(last));
 	// geometry.push_back(l1));
 	while (true) {
-		// для конца этого отрезка вытащим все пары номера этого отрезка и false/true ???
+		// РґР»СЏ РєРѕРЅС†Р° СЌС‚РѕРіРѕ РѕС‚СЂРµР·РєР° РІС‹С‚Р°С‰РёРј РІСЃРµ РїР°СЂС‹ РЅРѕРјРµСЂР° СЌС‚РѕРіРѕ РѕС‚СЂРµР·РєР° Рё false/true ???
 		auto begin = allLines.lower_bound(ll->p1Handle());
 		auto end = allLines.upper_bound(ll->p1Handle());
 		for (auto i = begin; i != end; i++) {
@@ -61,11 +61,11 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 		if (last == lines[0]) break;
 	}
 
-	// посчитаем площадь
+	// РїРѕСЃС‡РёС‚Р°РµРј РїР»РѕС‰Р°РґСЊ
 	auto a = GeometryUtility::getArea(lines_context, lines);
 	int side = a > FG_EPS ? 1 : a < FG_EPS ? -1 : 0;
 	if (side == 0) throw FGException("Unable to create polygon with all the points in a line");
-	// если площадь вышла отрицательной, то придется развернуть направление всех отрезков
+	// РµСЃР»Рё РїР»РѕС‰Р°РґСЊ РІС‹С€Р»Р° РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕР№, С‚Рѕ РїСЂРёРґРµС‚СЃСЏ СЂР°Р·РІРµСЂРЅСѓС‚СЊ РЅР°РїСЂР°РІР»РµРЅРёРµ РІСЃРµС… РѕС‚СЂРµР·РєРѕРІ
 	if (side < 0) {
 		for (auto i : geometry) {
 			ll = static_cast<ILine*>(lines_context.get_ptr(i));

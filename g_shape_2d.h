@@ -1,27 +1,27 @@
-#pragma once
+п»ї#pragma once
 #include "g_bsp.h"
 #include "g_primitive.h"
 
 namespace fg {
 	namespace primitive {
-		// некоторая замкнутая совокупность отрезков и кривых
+		// РЅРµРєРѕС‚РѕСЂР°СЏ Р·Р°РјРєРЅСѓС‚Р°СЏ СЃРѕРІРѕРєСѓРїРЅРѕСЃС‚СЊ РѕС‚СЂРµР·РєРѕРІ Рё РєСЂРёРІС‹С…
 		class FEMCADGEOMSHARED_EXPORT Shape : public Primitive, public IPrintable
 		{
 			std::unique_ptr<BSPTree<ILine>> bsp;
 		protected:
-			// для чего этот конструктор ???
+			// РґР»СЏ С‡РµРіРѕ СЌС‚РѕС‚ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ ???
 			Shape(Scene& s, const SETTINGHANDLE& setting, std::vector<GHANDLE>&& geom)
 				: Primitive(s, setting, geom) {
 				addSelfToContext();
 			}
 			void RebuildBSP()
 			{
-				// если уже есть bsp-дерево, то уничтожим его
+				// РµСЃР»Рё СѓР¶Рµ РµСЃС‚СЊ bsp-РґРµСЂРµРІРѕ, С‚Рѕ СѓРЅРёС‡С‚РѕР¶РёРј РµРіРѕ
 				if (bsp) bsp.reset();
-				// сложим в lines все объекты линий из геометрии shape
+				// СЃР»РѕР¶РёРј РІ lines РІСЃРµ РѕР±СЉРµРєС‚С‹ Р»РёРЅРёР№ РёР· РіРµРѕРјРµС‚СЂРёРё shape
 				std::vector<ILine*> lines;
 				for (auto i : geometry) lines.emplace_back(&getConstContext().get<ILine>(i));
-				// построим новое дерево BSP
+				// РїРѕСЃС‚СЂРѕРёРј РЅРѕРІРѕРµ РґРµСЂРµРІРѕ BSP
 				bsp = std::make_unique<BSPTree<ILine>>(BSPTree<ILine>(lines));
 			}
 		public:
@@ -90,7 +90,7 @@ namespace fg {
 			}
 
 		public:
-			// копирует объект на контекст
+			// РєРѕРїРёСЂСѓРµС‚ РѕР±СЉРµРєС‚ РЅР° РєРѕРЅС‚РµРєСЃС‚
 			virtual GHANDLE instantiate(Scene& s) const {
 				return copy(s);
 			}

@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "g_intersector.h"
 
@@ -14,9 +14,9 @@ namespace fg {
 		inline Splitter(Splitter&& s) = default;
 		inline Splitter& operator=(const Splitter& s) = default;
 		inline Splitter(const Element& l) : curve(l) { }
-		// определяет сзади или спереди или на линии лежит точка
+		// РѕРїСЂРµРґРµР»СЏРµС‚ СЃР·Р°РґРё РёР»Рё СЃРїРµСЂРµРґРё РёР»Рё РЅР° Р»РёРЅРёРё Р»РµР¶РёС‚ С‚РѕС‡РєР°
 		inline virtual int classify(const vector3 & p) const { return curve.classify(p); }
-		// определяет сзади или спереди или на линии лежит линия
+		// РѕРїСЂРµРґРµР»СЏРµС‚ СЃР·Р°РґРё РёР»Рё СЃРїРµСЂРµРґРё РёР»Рё РЅР° Р»РёРЅРёРё Р»РµР¶РёС‚ Р»РёРЅРёСЏ
 		inline virtual ClassificationState classify(const Element& line) const {
 			return Intersector<Element>::classify_dynamic(curve, line);
 		}

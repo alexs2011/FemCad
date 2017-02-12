@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "stdafx.h"
 #include "g_common_interface.h"
 #include "g_geometry.h"
@@ -39,7 +39,7 @@ namespace fg {
 		}
 	};
 
-	// Абстрактный класс, обобщающий замкнутые совокупности отрезков и кривых
+	// РђР±СЃС‚СЂР°РєС‚РЅС‹Р№ РєР»Р°СЃСЃ, РѕР±РѕР±С‰Р°СЋС‰РёР№ Р·Р°РјРєРЅСѓС‚С‹Рµ СЃРѕРІРѕРєСѓРїРЅРѕСЃС‚Рё РѕС‚СЂРµР·РєРѕРІ Рё РєСЂРёРІС‹С…
 	class FEMCADGEOMSHARED_EXPORT Primitive : public PrimitiveBase
 	{
 	protected:
@@ -59,9 +59,9 @@ namespace fg {
 		}
 
 	public:
-		//  возвращает геометрию
+		//  РІРѕР·РІСЂР°С‰Р°РµС‚ РіРµРѕРјРµС‚СЂРёСЋ
 		virtual std::vector<GHANDLE> getBoundary() const { return geometry; }
-		//  возвращает геометрию
+		//  РІРѕР·РІСЂР°С‰Р°РµС‚ РіРµРѕРјРµС‚СЂРёСЋ
 		virtual const std::vector<GHANDLE>& getConstBoundary() const { return geometry; }
 
 		// ITransformable interface

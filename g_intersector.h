@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include "g_line.h"
 
 namespace fg {
@@ -1209,12 +1209,12 @@ namespace fg {
 			int r = splitter.classify(p0);
 			int rl = splitter.classify(p1);
 			if (r == -rl) {
-				// middle - это точка, которая лежит на середне дуги между p0 и p1
+				// middle - СЌС‚Рѕ С‚РѕС‡РєР°, РєРѕС‚РѕСЂР°СЏ Р»РµР¶РёС‚ РЅР° СЃРµСЂРµРґРЅРµ РґСѓРіРё РјРµР¶РґСѓ p0 Рё p1
 				if (r == 0) return (ClassificationState)splitter.classify(line.middle());
 				return ClassificationState::Cross;
 			}
 			else {
-				// cr - с какой стороны лежит точка пересечения касательных к дуге, проведённых в точках p0 и p1
+				// cr - СЃ РєР°РєРѕР№ СЃС‚РѕСЂРѕРЅС‹ Р»РµР¶РёС‚ С‚РѕС‡РєР° РїРµСЂРµСЃРµС‡РµРЅРёСЏ РєР°СЃР°С‚РµР»СЊРЅС‹С… Рє РґСѓРіРµ, РїСЂРѕРІРµРґС‘РЅРЅС‹С… РІ С‚РѕС‡РєР°С… p0 Рё p1
 				int cr = splitter.classify(line.getCurve().control_point(p0, p1));
 				return (r == 0) ? (cr == rl ? (ClassificationState)rl : ClassificationState::Cross) : (cr == r ? (ClassificationState)r : ClassificationState::Cross);
 			}
@@ -1227,15 +1227,15 @@ namespace fg {
 				return ClassificationState::Cross;
 			}
 			else {
-				// вектор, который перпендикулярен к вектору p1-p0 (не единичной длины) сплиттера
+				// РІРµРєС‚РѕСЂ, РєРѕС‚РѕСЂС‹Р№ РїРµСЂРїРµРЅРґРёРєСѓР»СЏСЂРµРЅ Рє РІРµРєС‚РѕСЂСѓ p1-p0 (РЅРµ РµРґРёРЅРёС‡РЅРѕР№ РґР»РёРЅС‹) СЃРїР»РёС‚С‚РµСЂР°
 				auto n = splitter.getNormal();
 				bool v;
 				std::vector<vector3> inter;
-				// l проходит через p1 и p0
+				// l РїСЂРѕС…РѕРґРёС‚ С‡РµСЂРµР· p1 Рё p0
 				auto l = square_curve::line(n, -(n & splitter.P0()));
-				// ищутся пересечения l с line, пересечени записываются в inter
+				// РёС‰СѓС‚СЃСЏ РїРµСЂРµСЃРµС‡РµРЅРёСЏ l СЃ line, РїРµСЂРµСЃРµС‡РµРЅРё Р·Р°РїРёСЃС‹РІР°СЋС‚СЃСЏ РІ inter
 				line.getCurve().find_intersection(v, l, inter);
-				// если количество пересечений == 2
+				// РµСЃР»Рё РєРѕР»РёС‡РµСЃС‚РІРѕ РїРµСЂРµСЃРµС‡РµРЅРёР№ == 2
 				if (inter.size() == 2) {
 					return (line.pointCast(inter[0]) && line.pointCast(inter[1]) && splitter.classify(inter[0]) == 0 && splitter.classify(inter[1]) == 0) ? ClassificationState::Cross :
 						(r == 0 ? (ClassificationState)rl : (ClassificationState)r);

@@ -1,9 +1,10 @@
-#pragma once
+п»ї#pragma once
 #include "g_meshing.h"
 #include "g_line_ext.h"
 
 namespace fg {
 
+	// Р±Р°Р·РѕРІР°СЏ СЃРµС‚РєР°, РІ РєРѕС‚РѕСЂСѓСЋ Р±СѓРґСѓС‚ РґРѕР±Р°РІР»СЏС‚СЊСЃСЏ РІРµСЂС€РёРЅС‹, Р»РёРЅРёРё, РґСЂСѓРіРёРµ СЃРµС‚РєРё
 	class FEMCADGEOMSHARED_EXPORT MeshView2d {
 		struct _meshLineView {
 			const ILine& line;
@@ -52,9 +53,9 @@ namespace fg {
 			}
 		};
 		Mesh2 mesh;
-		// коллекция линий геометрии
+		// РєРѕР»Р»РµРєС†РёСЏ Р»РёРЅРёР№ РіРµРѕРјРµС‚СЂРёРё
 		std::vector<_meshLineView> geometry;
-		// для каждого ребра сетки список индексов линий геометрии, соответствующих ему
+		// РґР»СЏ РєР°Р¶РґРѕРіРѕ СЂРµР±СЂР° СЃРµС‚РєРё СЃРїРёСЃРѕРє РёРЅРґРµРєСЃРѕРІ Р»РёРЅРёР№ РіРµРѕРјРµС‚СЂРёРё, СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёС… РµРјСѓ
 		std::vector<std::vector<size_t>> _edgeGeometry;
 		const _meshLineView& get_edge_geometry(size_t edge, size_t p) const {
 			return geometry[_edgeGeometry[edge][p]];
@@ -141,7 +142,7 @@ namespace fg {
 						res = mesh.insert_point(int_points.back(), out, el);
 
 						if (res == GeometryType::Vertex) {
-							// Точка int_points.back() лежит на дуге int_index.back()
+							// РўРѕС‡РєР° int_points.back() Р»РµР¶РёС‚ РЅР° РґСѓРіРµ int_index.back()
 							int_points.pop_back();
 							int_index.pop_back();
 							continue;
@@ -153,7 +154,7 @@ namespace fg {
 						if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 						if (e0 != 0xFFFFFFFF && e0 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 						if (e1 != 0xFFFFFFFF && e1 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
-						// Дуга с индексом int_index.back() пересеклась с ребром el в точке int_points.back()
+						// Р”СѓРіР° СЃ РёРЅРґРµРєСЃРѕРј int_index.back() РїРµСЂРµСЃРµРєР»Р°СЃСЊ СЃ СЂРµР±СЂРѕРј el РІ С‚РѕС‡РєРµ int_points.back()
 
 						auto& line = geometry[int_index.back()];
 						double t = line.line.getParam(int_points.back());
