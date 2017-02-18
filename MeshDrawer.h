@@ -11,7 +11,7 @@ void processUsualKeys(unsigned char key, int xx, int yy);
 class MeshDrawer
 {
 private:
-	std::vector<const fg::MeshView2d *> mesh_views;
+	std::vector<const fg::IMeshView *> mesh_views;
 
 	int window_x;
 	int window_y;
@@ -64,12 +64,12 @@ public:
 		glutKeyboardFunc(processUsualKeys);
 		glutMainLoop();
 	}*/
-	int draw(const fg::MeshView2d& mesh)
+	int draw(const fg::IMeshView& _mesh)
 	{
-		mesh_views.push_back(&mesh);
+		mesh_views.push_back(&_mesh);
 		return mesh_views.size() - 1;
 	}
-	const std::vector<const fg::MeshView2d*>& getMeshViews() const
+	const std::vector<const fg::IMeshView*>& getMeshViews() const
 	{
 		return mesh_views;
 	}
@@ -176,15 +176,15 @@ void display(void)
 	}*/
 
 	for (auto meshview : meshes) {
-		const auto& mesh = meshview->Mesh();
-		for (size_t i = 0; i < mesh.edgesCount(); ++i) {
+		const auto& _mesh = meshview->mesh();
+		for (size_t i = 0; i < _mesh.edgesCount(); ++i) {
 			if (meshview->isBoundary(i)) {
 				glColor3f(1.0f, 0.2f, 0.2f);
 			}
 			else {
 				glColor3f(0.2f, 0.2f, 0.2f);
 			}
-			auto e = mesh.edge(i);
+			auto e = _mesh.edge(i);
 			auto draw_p = [&](double x, double y, double z) {
 				glVertex3d((x + xChange) * scale, (y + yChange) * scale, z);
 				if (x > xMax) xMax = x;
@@ -192,9 +192,9 @@ void display(void)
 				if (y > yMax) yMax = y;
 				if (y < yMin) yMin = y;
 			};
-			auto p = mesh.getCoordsByPointIdx(e.first);
+			auto p = _mesh.getCoordsByPointIdx(e.first);
 			draw_p(p.x, p.y, p.z);
-			p = mesh.getCoordsByPointIdx(e.second);
+			p = _mesh.getCoordsByPointIdx(e.second);
 			draw_p(p.x, p.y, p.z);
 		}
 		//for (size_t i = 0; i < mesh.TrianglesLength(); i++)
@@ -225,22 +225,24 @@ void display(void)
 	glPushMatrix();
 	//glLoadIdentity();
 	glLineWidth(1);
-	glBegin(GL_LINES);
+	//glBegin(GL_LINES);
 
 	glColor3f(0.3f, 0.3f, 0.3f);
-	for (int i = xMin - 6; i < xMax + 6; i++)
-	{
-		glVertex3d((i + xChange) * scale, (yMin - 6 + yChange) * scale, -1.0);
-		glVertex3d((i + xChange) * scale, (yMax + 6 + yChange) * scale, -1.0);
-	}
+	//for (int i = xMin - 6; i < xMax + 6; i++)
+	//{
+	//	glVertex3d((i + xChange) * scale, (yMin - 6 + yChange) * scale, -1.0);
+	//	glVertex3d((i + xChange) * scale, (yMax + 6 + yChange) * scale, -1.0);
+	//}
+	//
+	//for (int i = yMin - 6; i < yMax + 6; i++)
+	//{
+	//	glVertex3d((xMin - 6 + xChange) * scale, (i + yChange) * scale, -1.0);
+	//	glVertex3d((xMax + 6 + xChange) * scale, (i + yChange) * scale, -1.0);
+	//}
 
-	for (int i = yMin - 6; i < yMax + 6; i++)
-	{
-		glVertex3d((xMin - 6 + xChange) * scale, (i + yChange) * scale, -1.0);
-		glVertex3d((xMax + 6 + xChange) * scale, (i + yChange) * scale, -1.0);
-	}
+	//glEnd();
 
-	glEnd();
+
 	//glPopMatrix();
 
 	//glPushMatrix();

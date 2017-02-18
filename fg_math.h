@@ -922,9 +922,22 @@ namespace fg {
 		//axis plane;
 		std::unique_ptr<lookup_tree<D, T, (plane + 1) % D>> s[2];
 		std::vector<std::pair<rect, T>> container;
-		const size_t Mx, max_depth;
+		size_t Mx, max_depth;
 		vector3 minimum, maximum;
 	public:
+		/*lookup_tree(const lookup_tree<D, T, plane>& t) :Mx{ t.Mx }, max_depth{ t.max_depth }, minimum{ t.minimum }, maximum{ t.maximum }, container{ t.container } {
+			s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[0]);
+			s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[1]);
+		}*/
+		/*lookup_tree<D,T,plane>& operator=(const lookup_tree<D, T, plane>& t) {
+			Mx = t.Mx;
+			max_depth = t.max_depth;
+			minimum = t.minimum;
+			maximum = t.maximum;
+			container = t.container;
+			s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[0]);
+			s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[1]);
+		}*/
 		lookup_tree(lookup_tree&&) = default;
 		lookup_tree(size_t max_depth, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max) :
 			lookup_tree(max_depth, std::max(100U, (size_t)std::sqrt(rectangles.size()) + 10), std::move(rectangles), min, max, max_depth) {
@@ -964,7 +977,7 @@ namespace fg {
 		}
 
 		void add_element(const std::pair<rect, T>& element, size_t depth = 0) {
-			if (depth == max_depth) {
+			if (depth == max_depth || container.size() < Mx) {
 				container.push_back(element);
 				return;
 			}
@@ -1364,7 +1377,7 @@ namespace fg {
 		polynome get_y_equ(double x) const {
 			return polynome::square(b, c*x + e, a * x * x + d * x + f);
 		}
-		bool is_on_boundary(const vector3 x) const {
+		bool is_on_boundary(const vector3 &x) const {
 			return (std::fabs(a * x.x * x.x + b * x.y * x.y + c * x.x * x.y + d * x.x + e * x.y + f) < FG_EPS);
 		}
 		double ppow(double x, int p) const {

@@ -3,7 +3,7 @@
 namespace fg {
 	// получить объект, созданный с помощью CSG операции, примененной к двум примитивам
 	GHANDLE fg::GeometryUtility::ApplyCSG(Scene & context, CSGOperation op, const Primitive & primitive0, const Primitive & primitive1) {
-		// как это работает? комментарии ???
+
 		Scene resultContext;
 		Scene tempContext;
 		std::unique_ptr<Lookup> tree0;

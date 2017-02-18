@@ -3,9 +3,42 @@
 #include "g_line_ext.h"
 
 namespace fg {
+	class IMeshView {
+	public:
+		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const = 0;
+		virtual const size_t boundary_size() const = 0;
+		virtual const Mesh2& mesh() const = 0;
+		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const = 0;
+	};
+	class RectMeshView : public virtual IMeshView{
+		const RectView& rect;
+		Mesh2 _mesh;
+		std::vector<MeshedLine> _boundary;
+	public:
+		RectMeshView(const RectView& m) : rect{ m }, _mesh{ m.mesh() } {
+			for (auto i : m.lines) {
+				for (auto j : i.lines) {
+					_boundary.push_back(j);
+				}
+			}
+		}
+		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {
+			return _boundary[index];
+		}
+		virtual const size_t boundary_size() const {
+			return _boundary.size();
+		}
+		virtual const Mesh2& mesh() const {
+			return _mesh;
+		}
 
+		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const {
+			return false;
+		}
+	};
 	// базовая сетка, в которую будут добавляться вершины, линии, другие сетки
-	class FEMCADGEOMSHARED_EXPORT MeshView2d {
+	class FEMCADGEOMSHARED_EXPORT MeshView2d : public virtual IMeshView {
+		// коллекция линий геометрии
 		struct _meshLineView {
 			const ILine& line;
 			std::map<Mesh2::EdgeIndex, double> pos;
@@ -51,8 +84,17 @@ namespace fg {
 				edges[w] = e0;
 				edges[t] = e1;
 			}
+			void replace(Mesh2::EdgeIndex e, std::vector<std::pair<double, Mesh2::EdgeIndex>>& e_new) {
+				double w = pos[e];
+				pos.erase(e);
+				for (auto i : e_new) {
+					pos[i.second] = i.first;
+					edges[i.first] = i.second;
+				}
+			}
 		};
-		Mesh2 mesh;
+		// Внутренняя сетка. Состоит из вершин, ребер, треугольников. Треугольники состоят из ребер, а ребра из вершин.
+		Mesh2 _mesh;
 		// коллекция линий геометрии
 		std::vector<_meshLineView> geometry;
 		// для каждого ребра сетки список индексов линий геометрии, соответствующих ему
@@ -71,50 +113,102 @@ namespace fg {
 				}
 			}
 		}
+		template<class It>
+		void edge_geometry_replace(size_t geom, size_t e, It e_begin, It e_end) {
+			for (size_t i{}; i < _edgeGeometry[e].size(); i++) {
+				if (geom == _edgeGeometry[e][i]) {
+					for (auto j{ e_begin }; j != e_end; ++j) {
+						_edgeGeometry[*j].push_back(geom);
+					}
+					_edgeGeometry[e][i] = _edgeGeometry[e].back();
+					_edgeGeometry[e].pop_back();
+					break;
+				}
+			}
+		}
 
+		inline void update_line(size_t geometry_index, vector3 point, std::vector<size_t>& edges) {
+			auto& line = geometry[geometry_index];
+			// локальная координата точки пересечения на линии line
+			double t = line.line.getParam(point);
+			// ребро сетки, лежащее на line, соответсвующее координате t
+			auto e = line.get(t);
+			// координата начала ребра e
+			auto tt = line.pos[e];
+			// если не попали в начало ребра, тогда нужно обновить границу
+			if (std::fabs(tt - t) > FG_EPS) {
+				size_t edge_beg;
+				size_t edge_end;
+				// находим начало и конец ребра
+				_mesh.cast(line.line.sample(tt), edge_beg);
+				edge_end = _mesh.edge(e).first;
+				if (edge_end == edge_beg) edge_end = _mesh.edge(e).second;
+				size_t e0, e1;
+
+				static std::vector<std::pair<double, Mesh2::EdgeIndex>> add_edges;
+				add_edges.resize(0);
+				for (size_t j{}; j < edges.size(); j++) {
+					auto edge_cur = _mesh.edge(edges[j]);
+					if (line.line.classify(_mesh.point(edge_cur.first)) || line.line.classify(_mesh.point(edge_cur.second))) {
+						if (j < edges.size() - 1) {
+							edges[j] = edges.back();
+							j--;
+						}
+						edges.pop_back();
+					}
+					else {
+						double tt0 = std::min(line.line.getParam(_mesh.point(edge_cur.first)), line.line.getParam(_mesh.point(edge_cur.second)));
+						if (std::fabs(tt0 - t) < FG_EPS) tt0 = t;
+						add_edges.push_back(std::make_pair(tt0, edges[j]));
+					}
+				}
+				edge_geometry_replace(geometry_index, e, edges.begin(), edges.end());
+				geometry[geometry_index].replace(e, add_edges);
+			}
+		}
 	public:
 		inline bool isBoundary(Mesh2::EdgeIndex i) const {
 			//if (_edgeGeometry.size() <= i) return false;
 			return _edgeGeometry[i].size() > 0;
 			//return std::any_of(geometry.begin(), geometry.end(), [=](_meshLineView x)->bool {return x.pos.count(i) > 0; });
 		}
-		const Mesh2& Mesh() const { return mesh; }
 
-		MeshView2d(const RectView& r) : mesh(r.mesh()) 
+		MeshView2d(const IMeshView& r) : _mesh(r.mesh())
 		{
 			std::map<Mesh2::Edge, Mesh2::EdgeIndex> edges;
-			_edgeGeometry.resize(mesh.edgesCount());
-			for (size_t i{}; i < mesh.edges.size(); i++) {
-				auto e = mesh.edges[i];
+			_edgeGeometry.resize(_mesh.edgesCount());
+			for (size_t i{}; i < _mesh.edges.size(); i++) {
+				auto e = _mesh.edges[i];
 				edges[e] = i;
 				edges[std::make_pair(e.second, e.first)] = i;
 			}
 			auto p = 0U;
 			auto pnext = 0U;
-			for (size_t i{}; i < r.lines.size(); i++) {
-				for (size_t j{}; j < r.lines[i].lines.size(); j++) {
-					geometry.emplace_back(_meshLineView(r.lines[i].lines[j].line));
-					auto& ps = r.lines[i].lines[j].points;
-					vector3 sample_point = geometry.back().line.sample(0.0);
-					auto res = mesh.cast(sample_point, p);
+			//const auto& rlines = r.boundary();
+			for (size_t i{}; i < r.boundary_size(); i++) {
+				geometry.emplace_back(_meshLineView(r.boundary(i).line));
+				auto& ps = r.boundary(i).points;
+				vector3 sample_point = geometry.back().line.sample(0.0);
+				auto res = _mesh.cast(sample_point, p);
+				if (res != GeometryType::Vertex) throw FGException("Incorrect built mesh!");
+				for (size_t k{ 0 }; k <= ps.size(); k++) {
+					sample_point = geometry.back().line.sample(k == ps.size() ? 1.0 : ps[k]);
+					res = _mesh.cast(sample_point, pnext);
 					if (res != GeometryType::Vertex) throw FGException("Incorrect built mesh!");
-					for (size_t k{ 0 }; k <= ps.size(); k++) {
-						sample_point = geometry.back().line.sample(k == ps.size() ? 1.0 : ps[k]);
-						res = mesh.cast(sample_point, pnext);
-						if (res != GeometryType::Vertex) throw FGException("Incorrect built mesh!");
-						auto e = edges[std::make_pair(p, pnext)];
-						_edgeGeometry[e].push_back(geometry.size() - 1);
-						geometry.back().force_add(k == 0 ? 0.0 : ps[k - 1], e);
+					auto e = edges[std::make_pair(p, pnext)];
+					_edgeGeometry[e].push_back(geometry.size() - 1);
+					geometry.back().force_add(k == 0 ? 0.0 : ps[k - 1], e);
 
-						p = pnext;
-					}
+					p = pnext;
 				}
 			}
 		}
 		void AddPoint(const vector3& pos, std::vector<Mesh2::EdgeIndex>* added_edges = nullptr) {
 			std::tuple<size_t, size_t, size_t> out;
+			// хэндлер элемента геометрии, куда попала добавляемая точка
 			size_t el;
-			auto res = mesh.cast(pos, el);
+			// определим, в какой тип элемента геометрии попала добавляемая точка и его хэндлер
+			auto res = _mesh.cast(pos, el);
 			//auto res = mesh.insert_point(pos, out, el);
 
 			static std::vector<vector3> int_points;
@@ -127,19 +221,19 @@ namespace fg {
 				while (!new_edges.empty()) {
 					for (auto i : geoms) {
 						for (size_t j{}; j < new_edges.size(); j++) {
-							if (new_edges[j] == 0xFFFFFFFF) continue;
+							if (new_edges[j] == Mesh2::NotAnEdge) continue;
 #ifdef _DEBUG
 							std::cout << new_edges[j] << ", ";
 #endif
-							auto& m = mesh;
-							auto count = mesh.intersect(static_cast<const EllipticSegment&>(geometry[i].line), new_edges[j], int_points);
+							auto& m = _mesh;
+							auto count = _mesh.intersect(static_cast<const EllipticSegment&>(geometry[i].line), new_edges[j], int_points);
 							for (size_t k{}; k < count; k++) int_index.push_back(i);
 						}
 					}
 					new_edges.resize(0);
 					res = GeometryType::Vertex;
 					while (!int_points.empty()) {
-						res = mesh.insert_point(int_points.back(), out, el);
+						res = _mesh.insert_point(int_points.back(), out, el);
 
 						if (res == GeometryType::Vertex) {
 							// Точка int_points.back() лежит на дуге int_index.back()
@@ -152,8 +246,8 @@ namespace fg {
 						auto e1 = std::get<2>(out);
 						//if (std::get<0>(out) != 0xFFFFFFFF) 
 						if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
-						if (e0 != 0xFFFFFFFF && e0 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
-						if (e1 != 0xFFFFFFFF && e1 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
+						if (e0 != Mesh2::NotAnEdge && e0 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
+						if (e1 != Mesh2::NotAnEdge && e1 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 						// Дуга с индексом int_index.back() пересеклась с ребром el в точке int_points.back()
 
 						auto& line = geometry[int_index.back()];
@@ -161,15 +255,15 @@ namespace fg {
 						auto e = line.get(t);
 						auto tt = line.pos[e];
 						size_t indx;
-						mesh.cast(line.line.sample(tt), indx);
+						_mesh.cast(line.line.sample(tt), indx);
 
-						if (mesh.edge(e0).first == indx || mesh.edge(e0).second == indx)
+						if (_mesh.edge(e0).first == indx || _mesh.edge(e0).second == indx)
 							geometry[int_index.back()].replace(t, e, e0, e1);
 						else
 							geometry[int_index.back()].replace(t, e, e1, e0);
 
 						edge_geometry_replace(int_index.back(), e, e0, e1);
-						
+
 						new_edges.push_back(e0);
 						new_edges.push_back(e1);
 
@@ -188,7 +282,7 @@ namespace fg {
 				for (size_t i{}; i < _edgeGeometry[edge].size(); ++i) {
 					try {
 						const EllipticSegment& es = dynamic_cast<const EllipticSegment&>(get_edge_geometry(edge, i).line);
-						if (mesh.isLineInsideTriangle(es, edge, tri))
+						if (_mesh.isLineInsideTriangle(es, edge, tri))
 							geoms.push_back(_edgeGeometry[edge][i]);
 					}
 					catch (...) {}
@@ -199,9 +293,12 @@ namespace fg {
 				int_index.resize(0);
 				new_edges.resize(0);
 				geoms.resize(0);
-				auto edges = mesh.triangle(el);
-				auto res = mesh.insert_point(pos, out, el);
+				// вернулись хэндлеры ребер тр-ка, в который попала добавляемая точка
+				auto edges = _mesh.triangle(el);
+				// добавим точку в тр-к и вернем хэндлеры трех добавленых ребер в out
+				auto res = _mesh.insert_point(pos, out, el);
 
+				// вытащим ребра из out
 				auto eo = std::get<0>(out);
 				auto e0 = std::get<1>(out);
 				auto e1 = std::get<2>(out);
@@ -209,10 +306,10 @@ namespace fg {
 				add(std::get<0>(edges), el);
 				add(std::get<1>(edges), el);
 				add(std::get<2>(edges), el);
-				
+
 				if (eo >= _edgeGeometry.size()) _edgeGeometry.push_back({});
-				if (e0 >= _edgeGeometry.size() && e0 != 0xFFFFFFFF) _edgeGeometry.push_back({});
-				if (e1 >= _edgeGeometry.size() && e1 != 0xFFFFFFFF) _edgeGeometry.push_back({});
+				if (e0 >= _edgeGeometry.size() && e0 != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
+				if (e1 >= _edgeGeometry.size() && e1 != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
 
 
 				new_edges.push_back(std::get<0>(out));
@@ -228,10 +325,10 @@ namespace fg {
 				process_edges();
 			}
 			if (res == GeometryType::Edge) {
-				auto et = mesh.edge_triangle(el);
+				auto et = _mesh.edge_triangle(el);
 				auto tri0 = et.first;
 				auto tri1 = et.second;
-				auto edges = mesh.triangle(tri0);
+				auto edges = _mesh.triangle(tri0);
 
 				int_points.resize(0);
 				int_index.resize(0);
@@ -241,10 +338,10 @@ namespace fg {
 				add(std::get<1>(edges), tri0);
 				add(std::get<2>(edges), tri0);
 
-				auto res = mesh.insert_point(pos, out, el);
+				auto res = _mesh.insert_point(pos, out, el);
 				if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
-				if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != 0xFFFFFFFF) _edgeGeometry.push_back({});
-				if (std::get<2>(out) >= _edgeGeometry.size() && std::get<2>(out) != 0xFFFFFFFF) _edgeGeometry.push_back({});
+				if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
+				if (std::get<2>(out) >= _edgeGeometry.size() && std::get<2>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
 
 				new_edges.push_back(std::get<1>(out));
 				if (added_edges) {
@@ -261,10 +358,10 @@ namespace fg {
 					add(std::get<1>(edges), tri1);
 					add(std::get<2>(edges), tri1);
 
-					auto res = mesh.insert_point(pos, out, el);
+					auto res = _mesh.insert_point(pos, out, el);
 					if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
-					if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != 0xFFFFFFFF) _edgeGeometry.push_back({});
-					if (std::get<2>(out) >= _edgeGeometry.size() && std::get<2>(out) != 0xFFFFFFFF) _edgeGeometry.push_back({});
+					if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
+					if (std::get<2>(out) >= _edgeGeometry.size() && std::get<2>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
 
 					new_edges.push_back(std::get<2>(out));
 					if (added_edges) {
@@ -282,6 +379,7 @@ namespace fg {
 			static std::set<Mesh2::EdgeIndex> triangles_set;
 			static std::set<Mesh2::EdgeIndex> edges_set;
 			static std::vector<Mesh2::EdgeIndex> edges;
+			// вектор хэндлов линий геометрии, с которыми пересеклась добавляемая линия
 			static std::vector<size_t> geoms;
 			int0.resize(0);
 			int1.resize(0);
@@ -289,8 +387,11 @@ namespace fg {
 			edges_set.clear();
 			triangles_set.clear();
 			geoms.resize(0);
+			// для всех линий геометрии базовой сетки
 			for (size_t i{}; i < geometry.size(); i++) {
+				// ищем пересечение линии геометрии базовой сетки и добавляемой линии
 				Intersector<ILine>::intersect_dynamic(int0, int1, line.line, geometry[i].line);
+				// добавляем найденные точки пересечения в int_common и линию геометрии, с которой пересеклись в geoms
 				for (size_t j{}; j < int0.size(); j++) {
 					for (size_t k{ j }; k < int1.size(); k++) {
 						if (int0[j] == int1[k]) {
@@ -300,35 +401,19 @@ namespace fg {
 					}
 				}
 			}
-			AddPoint(line.p0());
-			AddPoint(line.p1());
 			
+			// для всех точек пересечения ???
 			for (size_t i{}; i < int_common.size(); i++) {
 				edges.resize(0);
+				// добавили точку пересечения в базовую сетку
 				AddPoint(int_common[i], &edges);
-				auto& line = geometry[geoms[i]];
-				double t = line.line.getParam(int_common[i]);
-				auto e = line.get(t);
-				auto tt = line.pos[e];
-				if (std::fabs(tt - t) > FG_EPS) {
-					size_t edge_beg;
-					size_t edge_end;
-					mesh.cast(line.line.sample(tt), edge_beg);
-					edge_end = mesh.edge(e).first;
-					if (edge_end == edge_beg) edge_end = mesh.edge(e).second;
-					size_t e0, e1;
-					
-					for (size_t j{}; j < edges.size(); j++) {
-						auto edge_cur = mesh.edge(edges[j]);
-						if (edge_cur.first == edge_beg || edge_cur.second == edge_beg) e0 = edges[j];
-						if (edge_cur.first == edge_end || edge_cur.second == edge_end) e1 = edges[j];
-					}
-
-					geometry[geoms[i]].replace(t, e, e0, e1);
-					
-					edge_geometry_replace(geoms[i], e, e0, e1);
-				}
+				if(edges.size())
+					update_line(geoms[i], int_common[i], edges);
 			}
+			// добавили вершины начала и конца добавляемой линии в базовую сетку
+			AddPoint(line.p0());
+			AddPoint(line.p1());
+
 			edges.resize(0);
 			static std::vector<rect> boxes;
 			boxes.resize(0);
@@ -343,20 +428,20 @@ namespace fg {
 				boxes.push_back(line.line.getBoundingRect());
 			}
 			for (size_t i{}; i < boxes.size(); ++i) {
-				mesh.lookup().get_overlap(boxes[i], triangles_set);
+				_mesh.lookup().get_overlap(boxes[i], triangles_set);
 			}
 			for (auto i : triangles_set) {
-				edges_set.insert(std::get<0>(mesh.triangle(i)));
-				edges_set.insert(std::get<1>(mesh.triangle(i)));
-				edges_set.insert(std::get<2>(mesh.triangle(i)));
+				edges_set.insert(std::get<0>(_mesh.triangle(i)));
+				edges_set.insert(std::get<1>(_mesh.triangle(i)));
+				edges_set.insert(std::get<2>(_mesh.triangle(i)));
 			}
 			auto mline = _meshLineView(line.line);
 			edges.insert(edges.end(), edges_set.begin(), edges_set.end());
 			for (size_t i{}; i < edges.size(); ++i) {
 				int_common.resize(0);
-				auto e = mesh.edge(edges[i]);
-				auto v0 = mesh.point(e.first);
-				auto v1 = mesh.point(e.second);
+				auto e = _mesh.edge(edges[i]);
+				auto v0 = _mesh.point(e.first);
+				auto v1 = _mesh.point(e.second);
 				auto res = Intersector<ILine>::intersect_segment(line.line, v0, v1, int_common);
 				switch (res) {
 				case 0:
@@ -388,25 +473,43 @@ namespace fg {
 		}
 		// OBSOLETE
 		void Flip(const Mesh2::EdgeIndex edge) {
-			
+
 		}
 		// w = 0 -> edges[edge].first
 		// w = 1 -> edges[edge].second
-		void SubdivideEdge(const Mesh2::EdgeIndex edge, double w = 0.5) {
+		void SubdivideEdge(const Mesh2::EdgeIndex edge, std::vector<size_t>& result_edges, double w = 0.5) {
+			static std::vector<size_t> edges;
 			if (isBoundary(edge)) {
-				for (auto i : _edgeGeometry[edge]) {
-					auto t0 = geometry[i].pos[edge];
-					auto t1 = geometry[i].next(t0);
+				for (auto i{ 0U }; i < _edgeGeometry[edge].size(); ++i) {
+					edges.resize(0);
+					auto t0 = geometry[_edgeGeometry[edge][i]].pos[edge];
+					auto t1 = geometry[_edgeGeometry[edge][i]].next(t0);
 
-					if (mesh.point(mesh.edge(edge).first) == geometry[i].line.sample(t0)) {
-						AddPoint(geometry[i].line.sample(t0 * (1.0 - w) + t1 * w));
-					}else{
-						AddPoint(geometry[i].line.sample(t1 * (1.0 - w) + t0 * w));
+					vector3 p;
+					if (_mesh.point(_mesh.edge(edge).first) == geometry[_edgeGeometry[edge][i]].line.sample(t0)) {
+						p = geometry[_edgeGeometry[edge][i]].line.sample(t0 * (1.0 - w) + t1 * w);
+					}
+					else {
+						p = geometry[_edgeGeometry[edge][i]].line.sample(t1 * (1.0 - w) + t0 * w);
+					}
+					AddPoint(p, &edges);
+					if (edges.size()) {
+						result_edges.insert(result_edges.end(), edges.begin(), edges.end());
+						update_line(_edgeGeometry[edge][i], p, edges);
 					}
 				}
 			}
-			AddPoint(mesh.sample_edge(edge, w));
+			AddPoint(_mesh.sample_edge(edge, w), &result_edges);
 		}
+
+
+		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {
+			return MeshedLine(geometry[index].line);
+		}
+		virtual const size_t boundary_size() const {
+			return geometry.size();
+		}
+		virtual const Mesh2& mesh() const { return _mesh; }
 	protected:
 	};
 }

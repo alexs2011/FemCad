@@ -10,7 +10,7 @@ namespace fg {
 	class FEMCADGEOMSHARED_EXPORT IClassifiable {
 	public:
 		// лежит ли точка p в этой геометрии (объекте)
-		// какие значения возвращает ???
+		// 1 - лежит снаружи, 0 - на границе, -1 - внутри
 		virtual int classify(const vector3& p) const = 0;
 		// возвращает среднюю точку геометрии
 		virtual vector3 middle() const = 0;

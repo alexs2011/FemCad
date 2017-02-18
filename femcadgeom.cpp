@@ -14,6 +14,7 @@
 #include "g_line_ext.h"
 #include "g_meshview.h"
 #include "MeshDrawer.h"
+#include "g_mesh_combiner.h"
 
 //int fg::BSPNode2D::ID = 0;
 //int fg::ISetting::ID = 0;
@@ -28,7 +29,7 @@ void FemCadGeomTester::Launch()
 	Scene s;
 	SETTINGHANDLE vs = std::make_shared<VertexSetting>(VertexSetting());
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting());
-	ls_1->setParameter("N", DoubleParameter(2));
+	ls_1->setParameter("N", DoubleParameter(1));
 	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting());
@@ -37,14 +38,14 @@ void FemCadGeomTester::Launch()
 
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
 
-	GHANDLE v0 = Vertex(s, vs, { 0,0,0 }).getHandle();
-	GHANDLE v1 = Vertex(s, vs, { 3,0,0 }).getHandle();
-	GHANDLE v2 = Vertex(s, vs, { 0,3,0 }).getHandle();
+	GHANDLE v0 = Vertex(s, vs, { -3,-3,0 }).getHandle();
+	GHANDLE v1 = Vertex(s, vs, { 3,-3,0 }).getHandle();
+	GHANDLE v2 = Vertex(s, vs, { -3,3,0 }).getHandle();
 	GHANDLE v3 = Vertex(s, vs, { 3,3,0 }).getHandle();
-	GHANDLE v4 = Vertex(s, vs, { 1.,1.,0 }).getHandle();
-	GHANDLE v5 = Vertex(s, vs, { 2,2,0 }).getHandle();
-	GHANDLE v6 = Vertex(s, vs, { 1,2.2,0 }).getHandle();
-	GHANDLE v7 = Vertex(s, vs, { 2,1.2,0 }).getHandle();
+	GHANDLE v4 = Vertex(s, vs, { 0,-1,0 }).getHandle();
+	GHANDLE v5 = Vertex(s, vs, { 2,-1,0 }).getHandle();
+	GHANDLE v6 = Vertex(s, vs, { 2,1,0 }).getHandle();
+	GHANDLE v7 = Vertex(s, vs, { 0,1,0 }).getHandle();
 	//GHANDLE v6 = Vertex(s, vs, { 0,2,0 }).getHandle();
 	//GHANDLE v7 = Vertex(s, vs, { -0.5,1,0 }).getHandle();
 	/*GHANDLE v4 = Vertex(s, vs, { 1.5,2,0 }).getHandle();
@@ -54,39 +55,35 @@ void FemCadGeomTester::Launch()
 
 	//GHANDLE l0 = EllipticSegment(s, ls, v0, v1, v4).getHandle();
 	GHANDLE l0 = LineSegment(s, ls_1, v0, v1).getHandle();
-
-	//ls->setParameter("N", DoubleParameter(2));
-	//ls->setParameter("q", DoubleParameter(2));
-	GHANDLE l1 = LineSegment(s, ls_2, v1, v3).getHandle();
+	GHANDLE l1 = LineSegment(s, ls_1, v1, v3).getHandle();
 	GHANDLE l2 = LineSegment(s, ls_1, v3, v2).getHandle();
-	GHANDLE l3 = LineSegment(s, ls_2, v2, v0).getHandle();
-	GHANDLE l4 = EllipticSegment(s, ls_2, v4, v5, v2).getHandle();
-	GHANDLE l5 = LineSegment(s, ls_2, v6, v7).getHandle();
-	//GHANDLE l5 = LineSegment(s, ls_1, v5, v6).getHandle();
-	//GHANDLE l6 = LineSegment(s, ls_2, v6, v7).getHandle();
-	//GHANDLE l7 = LineSegment(s, ls_1, v7, v0).getHandle();
+	GHANDLE l3 = LineSegment(s, ls_1, v2, v0).getHandle();
 
-	GHANDLE shape = primitive::Shape(s, ps, s, { l0, l1, l2, l3 }).getHandle();
-	auto& sh = s.get<primitive::Shape>(shape);
+	GHANDLE l4 = LineSegment(s, ls_2, v4, v5).getHandle();
+	GHANDLE l5 = LineSegment(s, ls_2, v5, v6).getHandle();
+	GHANDLE l6 = LineSegment(s, ls_2, v6, v7).getHandle();
+	GHANDLE l7 = LineSegment(s, ls_2, v7, v4).getHandle();
 
+	GHANDLE shape_base = primitive::Shape(s, ps, s, { l0, l1, l2, l3 }).getHandle();
+	GHANDLE shape_form0 = primitive::Shape(s, ps, s, { l4, l5, l6, l7 }).getHandle();
+	
+	
 	// всё то делает rect - это задаёт противоположные границы геометрии, что нужно для построения сетки
 	// также задает отступы разрядки на всей границе, а также на отдельных её линиях
-	RectView rect{ sh, v0, v1, v2, v3 };
+	auto& sh_base = s.get<primitive::Shape>(shape_base);
+	RectView rect_base{ sh_base, v0, v1, v2, v3 };
 
-	MeshView2d mesh{ rect };
+	auto& sh_form0 = s.get<primitive::Shape>(shape_form0);
+	RectView rect_form0{ sh_form0, v4, v5, v6, v7 };
 
-	mesh.AddLine(MeshedLine(s.get<ILine>(l4)));
-	mesh.AddLine(MeshedLine(s.get<ILine>(l5)));
+	std::shared_ptr<RectMeshView> mesh_form0{ std::make_shared<RectMeshView>(rect_form0) };
 
-	size_t el;
-	//auto res = mesh.cast({ -.125,0.25,0 }, el);
+	MeshCombiner combiner{ RectMeshView(rect_base) };
+	combiner.SetCriterion<OnePointCriterion>();
+	combiner.AddMesh(mesh_form0);
 
-	std::tuple<size_t, size_t, size_t> out;
-	//mesh.insert_point({ 2.0,0.5,0.0 }, out);
-	//mesh.collapseEdge(12);
-	//mesh.SubdivideEdge(18);
-	int mi = globalMeshDrawer.draw(mesh);
-	
+	int mi = globalMeshDrawer.draw(combiner);
+
 	globalMeshDrawer.init();
 	//Scene s, s1, main_scene;
 	//

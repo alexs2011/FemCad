@@ -16,6 +16,7 @@ namespace fg {
 		// отступы от начала линии, на которых будут располагаться вершины сетки
 		std::vector<double> points;
 	public:
+		// конструктор линии сетки с разрядкой
 		inline MeshedLine(const ILine& ref_line) : line{ ref_line } {
 			q = ref_line.getSetting()->getParameter<DoubleParameter>("q");
 			N = (size_t)ref_line.getSetting()->getParameter<DoubleParameter>("N");
@@ -72,7 +73,7 @@ namespace fg {
 		}
 
 		// возвращает отступы от начала ГРАНИЦЫ, где будут располагаться вершины сетки
-		std::vector<double> mesh() const {
+		std::vector<double> _mesh() const {
 			std::vector<double> result;
 			auto s = 1.0 / lines.size();
 			for (size_t i{}; i < lines.size(); i++) {
@@ -136,14 +137,19 @@ namespace fg {
 		const GHANDLE p01;
 		const GHANDLE p10;
 		const GHANDLE p11;
+		//mutable std::unique_ptr<Mesh2> _mesh;
+		//mutable std::vector<MeshedLine> _boundary;
 	public:
+		//virtual const std::vector<MeshedLine>& boundary() const {
+		//	return _boundary;
+		//}
 		// вектор границ, т.е. наборов линий с разрядкой и преобразованиями
 		std::vector<LineView> lines;
 		// для каждой из 4-х границ здесь хранятся отступы от начала ГРАНИЦЫ, где будут располагаться вершины сетки
 		std::vector<double> params[4];
 		RectView() = delete;
 		inline RectView(const primitive::Shape& shape, const GHANDLE p00, const GHANDLE p01, const GHANDLE p10, const GHANDLE p11) :
-			shape{ shape }, p00{ p00 }, p01{ p01 }, p10{ p10 }, p11{ p11 } 
+			shape{ shape }, p00{ p00 }, p01{ p01 }, p10{ p10 }, p11{ p11 }
 		{
 			// линии из которых состоит каждая из границ
 			std::vector<const ILine*> side[4];
@@ -154,10 +160,15 @@ namespace fg {
 			// ищем в геометрии вершину, которая соотвествует p00
 			for (; i < bnd.size(); i++) {
 				const ILine& p = shape.getConstContext().get<const ILine>(bnd[i]);
+				//_boundary.emplace_back(MeshedLine{ p });
 				if (p.p0Handle() == p00) {
 					break;
 				}
 			}
+			/*for (size_t j{i+1}; j < bnd.size(); j++) {
+				const ILine& p = shape.getConstContext().get<const ILine>(bnd[j]);
+				_boundary.emplace_back(MeshedLine{ p });
+			}*/
 			// идем по границе и начинаем заполнять противоположные границы геометрии (side) элементами геометрии, составляющими эти границы
 			size_t current{};
 			for (size_t j{}; j < bnd.size(); j++) {
@@ -171,7 +182,7 @@ namespace fg {
 			for (size_t j{}; j < 4; j++) {
 				lines.emplace_back(LineView{ side[j] });
 				// заполняем отступы от начала ГРАНИЦЫ, где будут располагаться вершины сетки
-				params[j] = lines[j].mesh();
+				params[j] = lines[j]._mesh();
 				// в начало и конец отступов добавим 0 и 1
 				params[j].insert(params[j].begin(), 0.0);
 				params[j].push_back(1.0);
@@ -182,6 +193,7 @@ namespace fg {
 		}
 
 		RectView(const RectView&) = default;
+
 
 		// строит сетку внутри объекта
 		RawMesh2 mesh() const {
@@ -258,4 +270,5 @@ namespace fg {
 			return RawMesh2(points, tris);
 		}
 	};
+	
 }

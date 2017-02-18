@@ -60,7 +60,7 @@ namespace fg {
 			throw FGException((std::string() + "Parameter \"" + name + "\" does not exsist!").c_str());
 		}
 		template<class T>
-		void setParameter(const std::string name, T&& parameter) {
+		void setParameter(const std::string &name, T&& parameter) {
 			if (parameters.count(name)) {
 				parameters[name].reset(new T{ parameter });
 				return;

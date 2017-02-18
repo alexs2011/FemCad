@@ -9,6 +9,11 @@ namespace fg {
 		using Triangle = std::tuple<size_t, size_t, size_t>;
 		std::vector<vector3> points;
 		std::vector<Triangle> triangles;
+		inline RawMesh2() = default;
+		inline RawMesh2(const RawMesh2&) = default;
+		inline RawMesh2(RawMesh2&&) = default;
+		inline RawMesh2& operator =(const RawMesh2&) = default;
+		inline RawMesh2& operator =(RawMesh2&&) = default;
 		inline RawMesh2(const std::vector<vector3>& points, const std::vector<Triangle>& triangles) :
 			points{ points } {
 			this->triangles.resize(triangles.size());
@@ -28,37 +33,44 @@ namespace fg {
 		Triangle = 0x3
 	};
 
+	// Внутренняя сетка. Состоит из вершин, ребер, треугольников. Треугольники состоят из ребер, а ребра из вершин.
 	class FEMCADGEOMSHARED_EXPORT Mesh2 {
+	protected:
+		void build_tree() {
+			std::vector<std::pair<rect, TriangleIndex>> rects(triangles.size());
+			rect brect{};
+			for (size_t i{}; i < triangles.size(); i++) {
+				auto t = triangleVertices(i);
+				rects[i] = std::make_pair(rect(points[std::get<0>(t)], points[std::get<1>(t)]).add_point(points[std::get<2>(t)]), i);
+				brect.add_rect(rects[i].first);
+			}
+			// дерево для поиска тр-ков
+			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
+		}
 	public:
 		using Edge = std::pair<size_t, size_t>;
 		using Triangle = std::tuple<size_t, size_t, size_t>;
 		using EdgeIndex = size_t;
 		using TriangleIndex = size_t;
 		using TreeTriangleIndex = size_t;
-
-		inline Mesh2(const RawMesh2& mesh) : points{ mesh.points } {
+		static const size_t NotAnEdge = 0xFFFFFFFF;
+		inline Mesh2() = default;
+		// Внутренняя сетка. Состоит из вершин, ребер, треугольников. Треугольники состоят из ребер, а ребра из вершин.
+		inline Mesh2(const RawMesh2& _mesh) : points{ _mesh.points } {
 			std::map<Edge, std::vector<size_t>> all_edges;
 			point_edges.resize(points.size());
-			std::vector<std::pair<rect, TriangleIndex>> rects(mesh.triangles.size());
-			rect brect{};
-			triangles.resize(mesh.triangles.size(), EmptyTriangle);
-			for (size_t i = 0; i < mesh.triangles.size(); i++) {
+			triangles.resize(_mesh.triangles.size(), EmptyTriangle);
+			for (size_t i = 0; i < _mesh.triangles.size(); i++) {
 				size_t p0, p1, p2;
 
-				std::tie(p0, p1, p2) = mesh.triangles[i];
+				std::tie(p0, p1, p2) = _mesh.triangles[i];
 				all_edges[std::make_pair(p0, p1)].push_back(i);
 				all_edges[std::make_pair(p0, p2)].push_back(i);
 				all_edges[std::make_pair(p1, p2)].push_back(i);
-
-				rects[i] = std::make_pair(rect(points[p0], points[p1]).add_point(points[p2]), i);
-				brect.add_rect(rects[i].first);
 			}
 			size_t p{};
 			edges.resize(all_edges.size());
 			edge_triangles.resize(all_edges.size());
-			// дерево для поиска тр-ков
-			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
-			rects.clear();
 			for (auto& i : all_edges) {
 				edges[p] = i.first;
 				auto t0 = i.second.front();
@@ -68,22 +80,40 @@ namespace fg {
 				point_edges[i.first.second].insert(p);
 
 				auto tt = triangles[t0];
-				if (std::get<0>(tt) == 0xFFFFFFFF) std::get<0>(tt) = p;
-				else if (std::get<1>(tt) == 0xFFFFFFFF && std::get<0>(tt) != p) std::get<1>(tt) = p;
-				else if (std::get<2>(tt) == 0xFFFFFFFF && std::get<0>(tt) != p && std::get<1>(tt) != p) std::get<2>(tt) = p;
+				if (std::get<0>(tt) == Mesh2::NotAnEdge) std::get<0>(tt) = p;
+				else if (std::get<1>(tt) == Mesh2::NotAnEdge && std::get<0>(tt) != p) std::get<1>(tt) = p;
+				else if (std::get<2>(tt) == Mesh2::NotAnEdge && std::get<0>(tt) != p && std::get<1>(tt) != p) std::get<2>(tt) = p;
 				triangles[t0] = tt;
 				tt = triangles[t1];
-				if (std::get<0>(tt) == 0xFFFFFFFF) std::get<0>(tt) = p;
-				else if (std::get<1>(tt) == 0xFFFFFFFF && std::get<0>(tt) != p) std::get<1>(tt) = p;
-				else if (std::get<2>(tt) == 0xFFFFFFFF && std::get<0>(tt) != p && std::get<1>(tt) != p) std::get<2>(tt) = p;
+				if (std::get<0>(tt) == Mesh2::NotAnEdge) std::get<0>(tt) = p;
+				else if (std::get<1>(tt) == Mesh2::NotAnEdge && std::get<0>(tt) != p) std::get<1>(tt) = p;
+				else if (std::get<2>(tt) == Mesh2::NotAnEdge && std::get<0>(tt) != p && std::get<1>(tt) != p) std::get<2>(tt) = p;
 				triangles[t1] = tt;
 
-				rects.push_back(std::make_pair(rect{ points[i.first.first], points[i.first.second] }, p));
+				//rects.push_back(std::make_pair(rect{ points[i.first.first], points[i.first.second] }, p));
 				p++;
 			}
+			build_tree();
 			//edge_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
 		}
-
+		inline Mesh2(const Mesh2& _mesh) :
+			points(_mesh.points),
+			edges(_mesh.edges),
+			point_edges(_mesh.point_edges),
+			triangles(_mesh.triangles),
+			edge_triangles(_mesh.edge_triangles) {
+			build_tree();
+		}
+		Mesh2& operator=(const Mesh2& _mesh) {
+			points = (_mesh.points);
+			edges = (_mesh.edges);
+			point_edges = (_mesh.point_edges);
+			triangles = (_mesh.triangles);
+			edge_triangles = (_mesh.edge_triangles);
+			build_tree();
+		}
+		Mesh2(Mesh2&&) = default;
+		Mesh2& operator=(Mesh2&&) = default;
 		inline std::array<EdgeIndex, 3> collapseEdge(EdgeIndex edge, double weight = 0.5) {
 			auto e = edges[edge];
 			auto tris = edge_triangles[edge];
@@ -149,7 +179,7 @@ namespace fg {
 				edge_triangles[et1].first == edge_triangles[et1].second &&
 				edge_triangles[ot1].first == edge_triangles[ot1].second &&
 				edge_triangles[ot1].first == edge_triangles[et1].second)
-				return{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+				return{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge };
 
 			//remove_edge_from_tree(edge);
 			//remove_edge_from_tree(et0);
@@ -249,7 +279,7 @@ namespace fg {
 			std::swap(points[e.second], points.back()); points.pop_back();
 
 			sz = edges.size() - 1;
-			be[0] = be[1] = be[2] = 0xFFFFFFFF;
+			be[0] = be[1] = be[2] = Mesh2::NotAnEdge;
 			auto clean_up_last_triangle = [&](EdgeIndex e, size_t siz) {
 				auto lt = triangles[edge_triangles[siz].first];
 				if (std::get<0>(lt) == siz) std::get<0>(lt) = e;
@@ -338,7 +368,7 @@ namespace fg {
 
 			//add_edge_to_tree(eni);
 			//add_edge_to_tree(e0ni);
-			EdgeIndex e1ni = 0xFFFFFFFF;
+			EdgeIndex e1ni = Mesh2::NotAnEdge;
 			if (t0i != t1i) {
 				e1ni = edges.size();
 				EdgeIndex et1i;
@@ -394,7 +424,7 @@ namespace fg {
 			if (edges[e1].first == v1 && edges[e1].second == v0) return e1;
 			if (edges[e2].first == v0 && edges[e2].second == v1) return e2;
 			if (edges[e2].first == v1 && edges[e2].second == v0) return e2;
-			return 0xFFFFFFFF;
+			return Mesh2::NotAnEdge;
 		}
 		inline matrix4x4 lcoords(TriangleIndex triangle) const {
 			matrix4x4 m;
@@ -437,7 +467,9 @@ namespace fg {
 					return l;
 				}
 			}
+			return std::numeric_limits<double>::infinity();
 		}
+		// определяет, в какой элемент геометрии попала точка
 		inline GeometryType cast(const vector3& point, size_t& result) const {
 			vector3 l;
 			std::set<TriangleIndex> overlaps;
@@ -474,12 +506,12 @@ namespace fg {
 					return GeometryType::Triangle;
 				}
 			}
-			result = 0xFFFFFFFF;
+			result = Mesh2::NotAnEdge;
 			return GeometryType::None;
 		}
 		inline EdgeIndex flip(EdgeIndex e) {
 			auto tri = edge_triangles[e];
-			if (tri.first == tri.second) return 0xFFFFFFFF;
+			if (tri.first == tri.second) return Mesh2::NotAnEdge;
 			auto t0 = triangles[tri.first];
 			auto t1 = triangles[tri.second];
 			size_t p0, p1;
@@ -591,11 +623,12 @@ namespace fg {
 			size_t element;
 			switch (cast(point, element)) {
 			case GeometryType::None:
-				el = 0xFFFFFFFF;
+				el = Mesh2::NotAnEdge;
 				return GeometryType::None;
 			case GeometryType::Vertex:
 				el = element;
 				return GeometryType::Vertex;
+				// если точка попала в ребро, то подразбиваем его на два
 			case GeometryType::Edge:
 			{
 				//points.push_back(point);
@@ -606,6 +639,7 @@ namespace fg {
 				el = element;
 				return GeometryType::Edge;
 			}
+			// если точка попала в треугольник, то он разбивается на три треугольника
 			case GeometryType::Triangle:
 				auto np = points.size();
 				points.push_back(point);
@@ -665,6 +699,7 @@ namespace fg {
 		inline int TrianglesLength() const {
 			return triangles.size();
 		}
+		// возвращает хэндлеры ребер тр-ка
 		inline Triangle triangle(size_t index) const {
 			return triangles[index];
 		}
@@ -734,7 +769,7 @@ namespace fg {
 		//std::unique_ptr<EdgeLookup> edge_lookup;
 		//std::vector<TriangleIndex> tree_index;
 
-		const Triangle EmptyTriangle = std::make_tuple(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+		const Triangle EmptyTriangle = std::make_tuple(Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge);
 		inline void remove_triangle_from_tree(TriangleIndex tri) {
 			rect r = rect{ points[edges[std::get<0>(triangles[tri])].first],
 				points[edges[std::get<0>(triangles[tri])].second] }.
