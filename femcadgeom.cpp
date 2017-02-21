@@ -27,14 +27,15 @@ using namespace fg;
 void FemCadGeomTester::Launch()
 {
 	Scene s;
+	Scene s2;
 	SETTINGHANDLE vs = std::make_shared<VertexSetting>(VertexSetting());
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting());
 	ls_1->setParameter("N", DoubleParameter(1));
 	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting());
-	ls_2->setParameter("N", DoubleParameter(1));
-	ls_2->setParameter("q", DoubleParameter(1.2));
+	ls_2->setParameter("N", DoubleParameter(5));
+	ls_2->setParameter("q", DoubleParameter(1.5));
 
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
 
@@ -42,10 +43,10 @@ void FemCadGeomTester::Launch()
 	GHANDLE v1 = Vertex(s, vs, { 3,-3,0 }).getHandle();
 	GHANDLE v2 = Vertex(s, vs, { -3,3,0 }).getHandle();
 	GHANDLE v3 = Vertex(s, vs, { 3,3,0 }).getHandle();
-	GHANDLE v4 = Vertex(s, vs, { 0,-1,0 }).getHandle();
-	GHANDLE v5 = Vertex(s, vs, { 2,-1,0 }).getHandle();
-	GHANDLE v6 = Vertex(s, vs, { 2,1,0 }).getHandle();
-	GHANDLE v7 = Vertex(s, vs, { 0,1,0 }).getHandle();
+	GHANDLE v4 = Vertex(s2, vs, { 0,-1,0 }).getHandle();
+	GHANDLE v5 = Vertex(s2, vs, { 2,-1,0 }).getHandle();
+	GHANDLE v6 = Vertex(s2, vs, { 0,1,0 }).getHandle();
+	GHANDLE v7 = Vertex(s2, vs, { 2,1,0 }).getHandle();
 	//GHANDLE v6 = Vertex(s, vs, { 0,2,0 }).getHandle();
 	//GHANDLE v7 = Vertex(s, vs, { -0.5,1,0 }).getHandle();
 	/*GHANDLE v4 = Vertex(s, vs, { 1.5,2,0 }).getHandle();
@@ -59,13 +60,13 @@ void FemCadGeomTester::Launch()
 	GHANDLE l2 = LineSegment(s, ls_1, v3, v2).getHandle();
 	GHANDLE l3 = LineSegment(s, ls_1, v2, v0).getHandle();
 
-	GHANDLE l4 = LineSegment(s, ls_2, v4, v5).getHandle();
-	GHANDLE l5 = LineSegment(s, ls_2, v5, v6).getHandle();
-	GHANDLE l6 = LineSegment(s, ls_2, v6, v7).getHandle();
-	GHANDLE l7 = LineSegment(s, ls_2, v7, v4).getHandle();
+	GHANDLE l4 = LineSegment(s2, ls_2, v4, v5).getHandle();
+	GHANDLE l5 = LineSegment(s2, ls_2, v5, v7).getHandle();
+	GHANDLE l6 = LineSegment(s2, ls_2, v7, v6).getHandle();
+	GHANDLE l7 = LineSegment(s2, ls_2, v6, v4).getHandle();
 
 	GHANDLE shape_base = primitive::Shape(s, ps, s, { l0, l1, l2, l3 }).getHandle();
-	GHANDLE shape_form0 = primitive::Shape(s, ps, s, { l4, l5, l6, l7 }).getHandle();
+	GHANDLE shape_form0 = primitive::Shape(s2, ps, s2, { l4, l5, l6, l7 }).getHandle();
 	
 	
 	// всё то делает rect - это задаёт противоположные границы геометрии, что нужно для построения сетки
@@ -73,16 +74,20 @@ void FemCadGeomTester::Launch()
 	auto& sh_base = s.get<primitive::Shape>(shape_base);
 	RectView rect_base{ sh_base, v0, v1, v2, v3 };
 
-	auto& sh_form0 = s.get<primitive::Shape>(shape_form0);
+	auto& sh_form0 = s2.get<primitive::Shape>(shape_form0);
 	RectView rect_form0{ sh_form0, v4, v5, v6, v7 };
 
 	std::shared_ptr<RectMeshView> mesh_form0{ std::make_shared<RectMeshView>(rect_form0) };
 
 	MeshCombiner combiner{ RectMeshView(rect_base) };
 	combiner.SetCriterion<OnePointCriterion>();
+	
 	combiner.AddMesh(mesh_form0);
+	MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
+	combiner.AdjustMesh(size);
 
 	int mi = globalMeshDrawer.draw(combiner);
+	//int mi2 = globalMeshDrawer.draw(*mesh_form0);
 
 	globalMeshDrawer.init();
 	//Scene s, s1, main_scene;

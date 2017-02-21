@@ -31,10 +31,11 @@ namespace fg {
 		double get_size(const vector3& point) const override {
 			std::tuple<size_t, size_t, size_t> verts;
 			auto res = _mesh.cast(point, verts);
-			return res & vector3{ max_edge(std::get<0>(verts)), max_edge(std::get<0>(verts)), max_edge(std::get<0>(verts)) };
+			return res & vector3{ max_edge(std::get<0>(verts)), max_edge(std::get<1>(verts)), max_edge(std::get<2>(verts)) };
 		}
+		// ищется максимальное ребро
 		double max_edge(size_t vertex) const {
-			double res = 0.0;
+			double res = std::numeric_limits<double>::max();
 			for (auto i : _mesh.point_edge(vertex)) {
 				res = std::min(res, _mesh.edge_length_sq(i));
 			}

@@ -14,18 +14,31 @@ namespace fg {
 		ICriterion(const Mesh2& _mesh) : base{ _mesh } {}
 		virtual CriterionResult get(Mesh2::EdgeIndex, const IElementSize<double>&) = 0;
 		virtual CriterionResult get(Mesh2::EdgeIndex, const IElementSize<vector3>&) = 0;
+		virtual double get_error(Mesh2::EdgeIndex, const IElementSize<double>&) = 0;
+		virtual double get_error(Mesh2::EdgeIndex, const IElementSize<vector3>&) = 0;
 	};
 
 	class OnePointCriterion : public ICriterion {
 	public:
 		using ICriterion::ICriterion;
 		virtual CriterionResult get(Mesh2::EdgeIndex edge, const IElementSize<double>& s) override {
+			// берем середину отрезка и на основе него вычисляем размер элемента ???
 			auto size = s.get_size(base.sample_edge(edge, 0.5));
-			return (base.edge_length(edge) > size) ? CriterionResult::Long : CriterionResult::Fit;
+			double l = base.edge_length(edge);
+			double error = (l - size)/size;
+			return (error > 1e-2) ? CriterionResult::Long : CriterionResult::Fit;
 		}
 		virtual CriterionResult get(Mesh2::EdgeIndex, const IElementSize<vector3>&) override {
 			// [TODO] vector criterion
 			return CriterionResult::Fit;
+		}
+		virtual double get_error(Mesh2::EdgeIndex edge, const IElementSize<double>& s) {
+			auto size = s.get_size(base.sample_edge(edge, 0.5));
+			register double l = base.edge_length(edge);
+			return (l - size) / size;
+		}
+		virtual double get_error(Mesh2::EdgeIndex, const IElementSize<vector3>&) {
+			return 0.0;
 		}
 	};
 	/*enum class CriterionType {

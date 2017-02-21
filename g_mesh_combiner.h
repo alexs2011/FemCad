@@ -24,23 +24,50 @@ namespace fg {
 				base.AddLine(meshes.back()->boundary(i));
 			}
 		}
+		void AddPoint(const vector3& point) {
+			base.AddPoint(point);
+		}
+		void AddLine(const MeshedLine& line) {
+			base.AddLine(line);
+		}
+
 		template<class T>
 		void AdjustMesh(const IElementSize<T>& size) {
-			std::vector<size_t> edges_list(base.mesh().edgesCount());
-			for (size_t i{}; i < edges_list.size(); i++) edges_list[i] = i;
-			size_t index = 0;
-			for (; index < edges_list.size(); index++) {
-				switch (criterion->get(edges_list[index], size))
-				{
-				case CriterionResult::Short:
-					// [TODO] collapse
-				default:
-				case CriterionResult::Fit:
-					continue;
-				case CriterionResult::Long:
-					base.SubdivideEdge(edges_list[index], edges_list);
-					break;
+			// у каждого ребра есть приоритет. Приоритет тем больше,чем больше ошибка на этом ребре
+			// чтобы ребра не обрабатывались бесконечно, новодобавленные ребра записываются в другой мультимэп
+			// при добавлениив мультмэп, ребра сортируются по приоритету, поэтому наиболее приоритетные обрабатываются первее
+			std::multimap<double, size_t> edges_list;//(base.mesh().edgesCount());
+			std::multimap<double, size_t> edges_list_new;//(base.mesh().edgesCount());
+			for (size_t i{}; i < base.mesh().edgesCount(); i++) edges_list.insert(std::make_pair(1e300, i));
+			//size_t index = 0;
+			size_t control = 0;
+
+			// TODO: может быть исходным ребрам тоже нужно изначально присвоить приоритет ???
+			for(;;){
+			//for (; control < 5; control++) {
+				while (edges_list.size()) {
+					auto edge = edges_list.end();
+					edge--;
+					switch (criterion->get(edge->second, size))
+					{
+					case CriterionResult::Short:
+						// [TODO] collapse
+					default:
+					case CriterionResult::Fit:
+						break;
+					case CriterionResult::Long:
+						static std::vector<size_t> edges;
+						edges.resize(0);
+						base.SubdivideEdge(edge->second, edges);
+						for (auto i : edges) {
+							edges_list_new.insert(std::make_pair(criterion->get_error(i, size), i));
+						}
+						break;
+					}
+					edges_list.erase(edge);
 				}
+				if (edges_list_new.size() == 0) break;
+				edges_list = std::move(edges_list_new);
 			}
 		}
 	};

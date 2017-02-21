@@ -715,6 +715,7 @@ namespace fg {
 		inline std::pair<TriangleIndex, TriangleIndex> edge_triangle(EdgeIndex i) const {
 			return edge_triangles[i];
 		}
+		// возвращает ребра, принадлежащие точке
 		inline const std::set<EdgeIndex>& point_edge(size_t point) const {
 			return point_edges[point];
 		}

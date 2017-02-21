@@ -166,6 +166,15 @@ namespace fg {
 				geometry[geometry_index].replace(e, add_edges);
 			}
 		}
+
+		bool intersectBoundary(vector3 p, std::vector<size_t>& geom) {
+			for (size_t i{}; i < geometry.size(); ++i) {
+				if (geometry[i].line.classify(p) == 0) {
+					geom.push_back(i);
+				}
+			}
+			return geom.size();
+		}
 	public:
 		inline bool isBoundary(Mesh2::EdgeIndex i) const {
 			//if (_edgeGeometry.size() <= i) return false;
@@ -203,7 +212,7 @@ namespace fg {
 				}
 			}
 		}
-		void AddPoint(const vector3& pos, std::vector<Mesh2::EdgeIndex>* added_edges = nullptr) {
+		void _addPoint(const vector3& pos, std::vector<Mesh2::EdgeIndex>* added_edges = nullptr) {
 			std::tuple<size_t, size_t, size_t> out;
 			// хэндлер элемента геометрии, куда попала добавляемая точка
 			size_t el;
@@ -293,9 +302,9 @@ namespace fg {
 				int_index.resize(0);
 				new_edges.resize(0);
 				geoms.resize(0);
-				// вернулись хэндлеры ребер тр-ка, в который попала добавляемая точка
+				// вернулись индексы ребер тр-ка, в который попала добавляемая точка
 				auto edges = _mesh.triangle(el);
-				// добавим точку в тр-к и вернем хэндлеры трех добавленых ребер в out
+				// добавим точку в тр-к и вернем индексы трех добавленых ребер в out
 				auto res = _mesh.insert_point(pos, out, el);
 
 				// вытащим ребра из out
@@ -345,6 +354,8 @@ namespace fg {
 
 				new_edges.push_back(std::get<1>(out));
 				if (added_edges) {
+					added_edges->push_back(el);
+					added_edges->push_back(std::get<0>(out));
 					added_edges->push_back(std::get<1>(out));
 				}
 				process_edges();
@@ -368,6 +379,22 @@ namespace fg {
 						added_edges->push_back(std::get<2>(out));
 					}
 					process_edges();
+				}
+			}
+		}
+
+		void AddPoint(const vector3& pos, std::vector<Mesh2::EdgeIndex>* added_edges = nullptr) {
+			static std::vector<size_t> geom;
+			static std::vector<size_t> edges;
+			geom.resize(0);
+			edges.resize(0);
+			_addPoint(pos, &edges);
+			if (added_edges) {
+				added_edges->insert(added_edges->end(), edges.begin(), edges.end());
+			}
+			if (edges.size() && intersectBoundary(pos, geom)) {
+				for (size_t i = 0; i < geom.size(); i++){
+					update_line(geom[i], pos, edges);
 				}
 			}
 		}
@@ -404,17 +431,17 @@ namespace fg {
 			
 			// для всех точек пересечения ???
 			for (size_t i{}; i < int_common.size(); i++) {
-				edges.resize(0);
+				//edges.resize(0);
 				// добавили точку пересечения в базовую сетку
 				AddPoint(int_common[i], &edges);
-				if(edges.size())
-					update_line(geoms[i], int_common[i], edges);
+				//if(edges.size())
+				//	update_line(geoms[i], int_common[i], edges);
 			}
 			// добавили вершины начала и конца добавляемой линии в базовую сетку
 			AddPoint(line.p0());
 			AddPoint(line.p1());
 
-			edges.resize(0);
+			// формирование ограничивающих объемов подсегментов добавляемого сегмента
 			static std::vector<rect> boxes;
 			boxes.resize(0);
 			if (line.points.size()) {
@@ -427,15 +454,19 @@ namespace fg {
 			else {
 				boxes.push_back(line.line.getBoundingRect());
 			}
+			// Поиск треугольников пересекающихся с ограничивающими объемами
 			for (size_t i{}; i < boxes.size(); ++i) {
 				_mesh.lookup().get_overlap(boxes[i], triangles_set);
 			}
+
+			// Формирование списка ребер сетки потенциально пересекающихся с добавляемым сегментом
 			for (auto i : triangles_set) {
 				edges_set.insert(std::get<0>(_mesh.triangle(i)));
 				edges_set.insert(std::get<1>(_mesh.triangle(i)));
 				edges_set.insert(std::get<2>(_mesh.triangle(i)));
 			}
 			auto mline = _meshLineView(line.line);
+			edges.resize(0);
 			edges.insert(edges.end(), edges_set.begin(), edges_set.end());
 			for (size_t i{}; i < edges.size(); ++i) {
 				int_common.resize(0);
@@ -455,17 +486,18 @@ namespace fg {
 				case 2:
 					if (int_common[0] == v0 && int_common[1] == v1 ||
 						int_common[0] == v1 && int_common[1] == v0) {
-
+					
 						double t0 = line.line.getParam(v0);
 						double t1 = line.line.getParam(v1);
 						mline.force_add(std::min(t0, t1), edges[i]);
-
+					
 						_edgeGeometry[edges[i]].push_back(geometry.size());
-
+					
 						continue;
 					}
 					AddPoint(int_common[0], &edges);
 					AddPoint(int_common[1], &edges);
+					break;
 				}
 			}
 			geometry.push_back(mline);
@@ -477,8 +509,11 @@ namespace fg {
 		}
 		// w = 0 -> edges[edge].first
 		// w = 1 -> edges[edge].second
-		void SubdivideEdge(const Mesh2::EdgeIndex edge, std::vector<size_t>& result_edges, double w = 0.5) {
+		template<class Collection>
+		void SubdivideEdge(const Mesh2::EdgeIndex edge, Collection& result_edges, double w = 0.5) {
 			static std::vector<size_t> edges;
+			edges.resize(0);
+			vector3 pp = _mesh.sample_edge(edge, w);
 			if (isBoundary(edge)) {
 				for (auto i{ 0U }; i < _edgeGeometry[edge].size(); ++i) {
 					edges.resize(0);
@@ -495,11 +530,14 @@ namespace fg {
 					AddPoint(p, &edges);
 					if (edges.size()) {
 						result_edges.insert(result_edges.end(), edges.begin(), edges.end());
-						update_line(_edgeGeometry[edge][i], p, edges);
+						//update_line(_edgeGeometry[edge][i], p, edges);
 					}
 				}
 			}
-			AddPoint(_mesh.sample_edge(edge, w), &result_edges);
+			edges.resize(0);
+			AddPoint(pp, &edges);
+			if (edges.size())
+				result_edges.insert(result_edges.end(), edges.begin(), edges.end());
 		}
 
 

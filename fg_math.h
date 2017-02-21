@@ -140,6 +140,12 @@ namespace fg {
 		inline friend bool operator >(const vector3& lhs, const vector3& rhs) {
 			return rhs < lhs;
 		}
+		inline friend bool operator <=(const vector3& lhs, const vector3& rhs) {
+			return !(lhs > rhs);
+		}
+		inline friend bool operator >=(const vector3& lhs, const vector3& rhs) {
+			return !(lhs < rhs);
+		}
 
 		friend std::ostream& operator<<(std::ostream& s, const vector3& v) {
 			s << "(" << v.x << ", " << v.y << ", " << v.z << ")";

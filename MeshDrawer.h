@@ -8,6 +8,8 @@ void reshape(int w, int h);
 void processSpecialKeys(int key, int xx, int yy);
 void processUsualKeys(unsigned char key, int xx, int yy);
 
+int window_id;
+
 class MeshDrawer
 {
 private:
@@ -31,7 +33,7 @@ public:
 		glutInitWindowSize(window_width, window_height);
 		glutInitWindowPosition(window_x, window_y);
 		glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-		glutCreateWindow("FemCad");
+		window_id = glutCreateWindow("FemCad");
 		glClearColor(1.0, 1.0, 1.0, 0.0);
 		glutDisplayFunc(display);
 		glutReshapeFunc(reshape);
@@ -64,6 +66,7 @@ public:
 		glutKeyboardFunc(processUsualKeys);
 		glutMainLoop();
 	}*/
+
 	int draw(const fg::IMeshView& _mesh)
 	{
 		mesh_views.push_back(&_mesh);
@@ -80,7 +83,7 @@ double xChange = 0.0, yChange = 0.0, scale = 1.0;
 
 void processSpecialKeys(int key, int xx, int yy)
 {
-	double fraction = 0.1;
+	double fraction = 0.1 / scale;
 	switch (key) {
 	case GLUT_KEY_LEFT:
 		xChange -= fraction;
@@ -106,6 +109,10 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 		break;
 	case '-':
 		scale /= scalingFraction;
+		break;
+	case 27: // escape key
+		glutDestroyWindow(window_id);
+		exit(0);
 		break;
 	}
 }
@@ -160,6 +167,7 @@ void display(void)
 	glLoadIdentity();
 	glPushMatrix();
 	glScaled(scale, scale, 0.0);
+	glTranslatef(xChange, yChange, 0.0f);
 
 	glBegin(GL_LINES);
 	glColor3d(0.0, 0.0, 0.0);
@@ -186,7 +194,7 @@ void display(void)
 			}
 			auto e = _mesh.edge(i);
 			auto draw_p = [&](double x, double y, double z) {
-				glVertex3d((x + xChange) * scale, (y + yChange) * scale, z);
+				glVertex3d(x, y, z);
 				if (x > xMax) xMax = x;
 				if (x < xMin) xMin = x;
 				if (y > yMax) yMax = y;
@@ -251,11 +259,11 @@ void display(void)
 	glBegin(GL_LINES);
 
 	glColor3d(0.0, 0.0, 0.0);
-	glVertex3d((xMin - 6 + xChange) * scale, (0.0 + yChange) * scale, 1.0);
-	glVertex3d((xMax + 6 + xChange) * scale, (0.0 + yChange) * scale, 1.0);
+	glVertex3d((xMin - 6), (0.0), 1.0);
+	glVertex3d((xMax + 6), (0.0), 1.0);
 
-	glVertex3d((0.0 + xChange) * scale, (yMin - 6 + yChange) * scale, 1.0);
-	glVertex3d((0.0 + xChange) * scale, (yMax + 6 + yChange) * scale, 1.0);
+	glVertex3d((0.0), (yMin - 6), 1.0);
+	glVertex3d((0.0), (yMax + 6), 1.0);
 
 	glEnd();
 	glPopMatrix();

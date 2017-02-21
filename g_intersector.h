@@ -83,7 +83,7 @@ namespace fg {
 						if (l1p0 < l1p1) {
 							if (l1p0 < l0p0) {
 								if (l1p1 < l0p1) {
-									if (l1p1 > l0p0) { // l1p0, l0p0, l1p1, l0p1
+									if (l1p1 >= l0p0) { // l1p0, l0p0, l1p1, l0p1
 										res.push_back(l0p0);
 										res.push_back(l1p1);
 										if (res.back() == res[res.size() - 2]) {
@@ -107,7 +107,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p0 < l0p1) {
+								if (l1p0 <= l0p1) {
 									if (l1p1 < l0p1) { // l0p0, l1p0, l1p1, l0p1
 										res.push_back(l1p0);
 										res.push_back(l1p1);
@@ -135,7 +135,7 @@ namespace fg {
 						else {
 							if (l1p1 < l0p0) {
 								if (l1p0 < l0p1) {
-									if (l1p0 > l0p0) { // l1p1, l0p0, l1p0, l0p1
+									if (l1p0 >= l0p0) { // l1p1, l0p0, l1p0, l0p1
 										res.push_back(l0p0);
 										res.push_back(l1p0);
 										if (res.back() == res[res.size() - 2]) {
@@ -159,7 +159,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p1 < l0p1) {
+								if (l1p1 <= l0p1) {
 									if (l1p0 < l0p1) { // l0p0, l1p1, l1p0, l0p1
 										res.push_back(l1p0);
 										res.push_back(l1p1);
@@ -189,7 +189,7 @@ namespace fg {
 						if (l1p0 < l1p1) {
 							if (l1p0 < l0p1) {
 								if (l1p1 < l0p0) {
-									if (l1p1 > l0p1) { // l1p0, l0p1, l1p1, l0p0
+									if (l1p1 >= l0p1) { // l1p0, l0p1, l1p1, l0p0
 										res.push_back(l1p1);
 										res.push_back(l0p0);
 										if (res.back() == res[res.size() - 2]) {
@@ -213,7 +213,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p0 < l0p0) {
+								if (l1p0 <= l0p0) {
 									if (l1p1 < l0p0) { // l0p1, l1p0, l1p1, l0p0
 										res.push_back(l1p0);
 										res.push_back(l1p1);
@@ -241,7 +241,7 @@ namespace fg {
 						else {
 							if (l1p1 < l0p1) {
 								if (l1p0 < l0p0) {
-									if (l1p0 > l0p1) { // l1p1, l0p1, l1p0, l0p0
+									if (l1p0 >= l0p1) { // l1p1, l0p1, l1p0, l0p0
 										res.push_back(l1p0);
 										res.push_back(l0p1);
 										if (res.back() == res[res.size() - 2]) {
@@ -265,7 +265,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p0 < l0p0) {
+								if (l1p0 <= l0p0) {
 									if (l1p1 < l0p0) { // l0p1, l1p1, l1p0, l0p0
 										res.push_back(l1p0);
 										res.push_back(l1p1);
@@ -357,7 +357,7 @@ namespace fg {
 						if (l1p0 < l1p1) {
 							if (l1p0 < l0p0) {
 								if (l1p1 < l0p1) {
-									if (l1p1 > l0p0) { // l1p0, l0p0, l1p1, l0p1
+									if (l1p1 >= l0p0) { // l1p0, l0p0, l1p1, l0p1
 										ppl0.insert(ppl0.end(), { l0p0, l1p1, l0p1 });
 										ppl1.insert(ppl1.end(), { l1p0, l0p0, l1p1 });
 										return IntersectionState::IncidentAndIntersect;
@@ -373,7 +373,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p0 < l0p1) {
+								if (l1p0 <= l0p1) {
 									if (l1p1 < l0p1) { // l0p0, l1p0, l1p1, l0p1
 										ppl0.insert(ppl0.end(), { l0p0, l1p0, l1p1, l0p1 });
 										ppl1.insert(ppl1.end(), { l1p0, l1p1 });
@@ -393,7 +393,7 @@ namespace fg {
 						else {
 							if (l1p1 < l0p0) {
 								if (l1p0 < l0p1) {
-									if (l1p0 > l0p0) { // l1p1, l0p0, l1p0, l0p1
+									if (l1p0 >= l0p0) { // l1p1, l0p0, l1p0, l0p1
 										ppl0.insert(ppl0.end(), { l0p0, l1p0, l0p1 });
 										ppl1.insert(ppl1.end(), { l1p1, l0p0, l1p0 });
 										return IntersectionState::IncidentAndIntersect;
@@ -409,7 +409,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p1 < l0p1) {
+								if (l1p1 <= l0p1) {
 									if (l1p0 < l0p1) { // l0p0, l1p1, l1p0, l0p1
 										ppl0.insert(ppl0.end(), { l0p0, l1p1, l1p0, l0p1 });
 										ppl1.insert(ppl1.end(), { l1p1, l1p0 });
@@ -431,7 +431,7 @@ namespace fg {
 						if (l1p0 < l1p1) {
 							if (l1p0 < l0p1) {
 								if (l1p1 < l0p0) {
-									if (l1p1 > l0p1) { // l1p0, l0p1, l1p1, l0p0
+									if (l1p1 >= l0p1) { // l1p0, l0p1, l1p1, l0p0
 										ppl0.insert(ppl0.end(), { l0p1, l1p1, l0p0 });
 										ppl1.insert(ppl1.end(), { l1p0, l0p1, l1p1 });
 										return IntersectionState::IncidentAndIntersect;
@@ -447,7 +447,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p0 < l0p0) {
+								if (l1p0 <= l0p0) {
 									if (l1p1 < l0p0) { // l0p1, l1p0, l1p1, l0p0
 										ppl0.insert(ppl0.end(), { l0p1, l1p0, l1p1, l0p0 });
 										ppl1.insert(ppl1.end(), { l1p0, l1p1 });
@@ -467,7 +467,7 @@ namespace fg {
 						else {
 							if (l1p1 < l0p1) {
 								if (l1p0 < l0p0) {
-									if (l1p0 > l0p1) { // l1p1, l0p1, l1p0, l0p0
+									if (l1p0 >= l0p1) { // l1p1, l0p1, l1p0, l0p0
 										ppl0.insert(ppl0.end(), { l0p1, l1p0, l0p0 });
 										ppl1.insert(ppl1.end(), { l1p1, l0p1, l1p0 });
 										return IntersectionState::IncidentAndIntersect;
@@ -483,7 +483,7 @@ namespace fg {
 								}
 							}
 							else {
-								if (l1p0 < l0p0) {
+								if (l1p0 <= l0p0) {
 									if (l1p1 < l0p0) { // l0p1, l1p1, l1p0, l0p0
 										ppl0.insert(ppl0.end(), { l0p1, l1p1, l1p0, l0p0 });
 										ppl1.insert(ppl1.end(), { l1p1, l1p0 });
