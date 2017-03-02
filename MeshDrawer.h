@@ -146,7 +146,7 @@ void reshape(int w, int h)
 
 void display(void)
 {
-	Sleep(57);
+	Sleep(100);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

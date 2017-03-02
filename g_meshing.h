@@ -45,7 +45,7 @@ namespace fg {
 				brect.add_rect(rects[i].first);
 			}
 			// дерево для поиска тр-ков
-			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(16, std::move(rects), brect.Min(), brect.Max()));
+			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(2, std::move(rects), brect.Min(), brect.Max()));
 		}
 	public:
 		using Edge = std::pair<size_t, size_t>;
@@ -459,8 +459,9 @@ namespace fg {
 		}
 		inline vector3 cast(const vector3& point, std::tuple<size_t, size_t, size_t>& vertices) const {
 			vector3 l;
-			std::set<TriangleIndex> overlaps;
-			triangle_lookup->get_overlap(rect{ point }, overlaps);
+			static std::vector<TriangleIndex> overlaps;
+			overlaps.resize(0);
+			triangle_lookup->get_overlap(point, overlaps);
 			for (auto i{ overlaps.begin() }; i != overlaps.end(); i++) {
 				if (test(*i, point, l)) {
 					vertices = triangleVertices(*i);
@@ -472,8 +473,9 @@ namespace fg {
 		// определяет, в какой элемент геометрии попала точка
 		inline GeometryType cast(const vector3& point, size_t& result) const {
 			vector3 l;
-			std::set<TriangleIndex> overlaps;
-			triangle_lookup->get_overlap(rect{ point }, overlaps);
+			static std::vector<TriangleIndex> overlaps;
+			overlaps.resize(0);
+			triangle_lookup->get_overlap(point, overlaps);
 			for (auto i{ overlaps.begin() }; i != overlaps.end(); i++) {
 				if (test(*i, point, l)) {
 					size_t e0, e1, e2;

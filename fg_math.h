@@ -946,14 +946,16 @@ namespace fg {
 		}*/
 		lookup_tree(lookup_tree&&) = default;
 		lookup_tree(size_t max_depth, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max) :
-			lookup_tree(max_depth, std::max(100U, (size_t)std::sqrt(rectangles.size()) + 10), std::move(rectangles), min, max, max_depth) {
+			lookup_tree(max_depth, std::max(1000U, (size_t)std::sqrt(rectangles.size()) + 10), std::move(rectangles), min, max, max_depth) {
 		}
 		lookup_tree(size_t depth, size_t max_elements, std::vector<std::pair<rect, T>>&& rectangles,
-			        const vector3& min, const vector3& max, const size_t max_depth)
-			        : Mx{ max_elements }, max_depth{ max_depth } 
+			const vector3& min, const vector3& max, const size_t max_depth)
+			: Mx{ max_elements }, max_depth{ max_depth }
 		{
 			if (rectangles.size() < Mx || depth <= 0) {
-				container = rectangles; return;
+				container = rectangles;
+				container.reserve(Mx); 
+				return;
 			}
 			std::vector<std::pair<rect, T>> front, back;
 			// мин и макс - координаты вершин ограниивающего пр¤моугольника, в который входит весь примитив
@@ -973,23 +975,38 @@ namespace fg {
 		}
 
 		// находит все элементы дерева, которые пересекаютс¤ с данным пр¤моугольником
-		void get_overlap(const rect& r, std::set<T>& output) const {
-			if (s[0]) s[0]->get_overlap(r, output);
-			if (s[1]) s[1]->get_overlap(r, output);
-
+		inline void get_overlap(const rect& r, std::set<T>& output) const {
+			auto c = r.classify_by<plane>(0.5*(maximum[plane] + minimum[plane]));
+			if (c <= 0 && s[0]) s[0]->get_overlap(r, output);
+			if (c >= 0 && s[1]) s[1]->get_overlap(r, output);
 			for (auto& i : container) {
-				if (r.itersect(i.first)) { output.insert(i.second); }
+				if (r.itersect(i.first)) {
+					output.insert(i.second);
+				}
 			}
 		}
 
-		void add_element(const std::pair<rect, T>& element, size_t depth = 0) {
-			if (depth == max_depth || container.size() < Mx) {
+		inline void get_overlap(const vector3& r, std::vector<T>& output) const {
+			auto mid = (0.5*(maximum[plane] + minimum[plane]));
+			auto c = r[plane] < mid ? -1 : r[plane] > mid ? 1 : 0;
+			if (c<=0 && s[0]) s[0]->get_overlap(r, output);
+			if (c>=0 && s[1]) s[1]->get_overlap(r, output);
+			for (auto& i : container) {
+				if (i.first.itersect(r)) {
+					output.push_back(i.second);
+				}
+			}
+			return;
+		}
+
+		inline void add_element(const std::pair<rect, T>& element, size_t depth = 0) {
+			if (depth == max_depth) { // || container.size() < Mx
 				container.push_back(element);
 				return;
 			}
 			if (!(s[0] || s[1])) {
 				container.push_back(element);
-				if (depth < max_depth) {
+				if (depth < max_depth && container.size() >= Mx) {
 					std::vector<std::pair<rect, T>> front, back;
 					double midaxis = 0.5 * (minimum[plane] + maximum[plane]);
 					for (size_t i = 0U; i < container.size(); i++) {
@@ -998,12 +1015,13 @@ namespace fg {
 						if (c >= 0) front.push_back(container[i]);
 					}
 					container.clear();
+					container.shrink_to_fit();
 					vector3 nmin = minimum; nmin[plane] = midaxis;
 					vector3 nmax = maximum; nmax[plane] = midaxis;
 					if (back.size()) s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
-						lookup_tree<D, T, (plane + 1) % D>(max_depth - 1, Mx, std::move(back), minimum, nmax, max_depth)));
+						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(back), minimum, nmax, max_depth)));
 					if (front.size()) s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
-						lookup_tree<D, T, (plane + 1) % D>(max_depth - 1, Mx, std::move(front), nmin, maximum, max_depth)));
+						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(front), nmin, maximum, max_depth)));
 				}
 				return;
 			}
@@ -1011,25 +1029,26 @@ namespace fg {
 			auto c = element.first.classify_by<plane>(midaxis);
 			if (c <= 0) {
 				if (s[0]) s[0]->add_element(element, depth + 1);
-				else if (max_depth > depth) {
+				else /*if (max_depth > depth)*/ {
 					vector3 nmax = maximum; nmax[plane] = midaxis;
 					s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
-						lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), minimum, nmax, max_depth)));
+						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), minimum, nmax, max_depth)));
 				}
 			}
 			if (c >= 0)
 				if (s[1]) s[1]->add_element(element, depth + 1);
-				else if (max_depth > depth) {
+				else /*if (max_depth > depth)*/ {
 					vector3 nmin = minimum; nmin[plane] = midaxis;
 					s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
-						lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), nmin, maximum, max_depth)));
+						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), nmin, maximum, max_depth)));
 				}
 		}
 
-		bool remove_element(const std::pair<rect, T>& element) {
+		inline bool remove_element(const std::pair<rect, T>& element) {
 			if (!container.empty()) {
 				size_t i{};
-				for (; i < container.size(); i++) {
+				auto s = container.size();
+				for (; i < s; i++) {
 					if (container[i].second == element.second)
 						break;
 				}
@@ -1037,7 +1056,7 @@ namespace fg {
 					return false;
 				}
 				else {
-					std::swap(container.back(), container[i]);
+					container[i] = std::move(container.back());
 					container.pop_back();
 				}
 				return true;
@@ -1051,7 +1070,7 @@ namespace fg {
 				if (s[1]) result = result || s[1]->remove_element(element);
 			return result;
 		}
-		void replace_element(const std::pair<rect, T>& element, T newv) {
+		inline void replace_element(const std::pair<rect, T>& element, T newv) {
 			if (!container.empty()) {
 				size_t i{};
 				for (; i < container.size(); i++) {
@@ -1067,7 +1086,7 @@ namespace fg {
 			if (c <= 0 && s[0]) s[0]->replace_element(element, newv);
 			if (c >= 0 && s[1]) s[1]->replace_element(element, newv);
 		}
-		void replace_element_rect(const std::pair<rect, T>& element, rect newv) {
+		inline void replace_element_rect(const std::pair<rect, T>& element, rect newv) {
 			remove_element(element);
 			add_element(std::make_pair(newv, element.second));
 		}
@@ -1231,7 +1250,7 @@ namespace fg {
 
 			return result;
 		}
-		
+
 		void find_intersection(bool& v, const square_curve& cr, std::vector<vector3>& intersections) const
 		{
 			polynome xp = this->collect_x(cr);
@@ -1349,7 +1368,8 @@ namespace fg {
 			double tt = std::atan2(p.y, p.x);
 			if (std::abs(t0 - t1) < PI) {
 				return (tt - t0) / (t1 - t0);
-			}else{
+			}
+			else {
 				if (t0 < 0) t0 += 2 * PI;
 				else t1 += 2 * PI;
 				return (tt - t0) / (t1 - t0);

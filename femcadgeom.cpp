@@ -34,8 +34,14 @@ void FemCadGeomTester::Launch()
 	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting());
-	ls_2->setParameter("N", DoubleParameter(5));
-	ls_2->setParameter("q", DoubleParameter(1.5));
+	ls_2->setParameter("N", DoubleParameter(20));
+	ls_2->setParameter("q", DoubleParameter(1.));
+	SETTINGHANDLE ls_3 = std::make_shared<LineSetting>(LineSetting());
+	ls_3->setParameter("N", DoubleParameter(20));
+	ls_3->setParameter("q", DoubleParameter(1/1.));
+	SETTINGHANDLE ls_4 = std::make_shared<LineSetting>(LineSetting());
+	ls_4->setParameter("N", DoubleParameter(20));
+	ls_4->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
 
@@ -61,9 +67,9 @@ void FemCadGeomTester::Launch()
 	GHANDLE l3 = LineSegment(s, ls_1, v2, v0).getHandle();
 
 	GHANDLE l4 = LineSegment(s2, ls_2, v4, v5).getHandle();
-	GHANDLE l5 = LineSegment(s2, ls_2, v5, v7).getHandle();
-	GHANDLE l6 = LineSegment(s2, ls_2, v7, v6).getHandle();
-	GHANDLE l7 = LineSegment(s2, ls_2, v6, v4).getHandle();
+	GHANDLE l5 = LineSegment(s2, ls_4, v5, v7).getHandle();
+	GHANDLE l6 = LineSegment(s2, ls_3, v7, v6).getHandle();
+	GHANDLE l7 = LineSegment(s2, ls_4, v6, v4).getHandle();
 
 	GHANDLE shape_base = primitive::Shape(s, ps, s, { l0, l1, l2, l3 }).getHandle();
 	GHANDLE shape_form0 = primitive::Shape(s2, ps, s2, { l4, l5, l6, l7 }).getHandle();
@@ -84,7 +90,7 @@ void FemCadGeomTester::Launch()
 	
 	combiner.AddMesh(mesh_form0);
 	MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
-	combiner.AdjustMesh(size);
+	//combiner.AdjustMesh(size);
 
 	int mi = globalMeshDrawer.draw(combiner);
 	//int mi2 = globalMeshDrawer.draw(*mesh_form0);

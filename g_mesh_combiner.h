@@ -38,14 +38,38 @@ namespace fg {
 			// при добавлениив мультмэп, ребра сортируются по приоритету, поэтому наиболее приоритетные обрабатываются первее
 			std::multimap<double, size_t> edges_list;//(base.mesh().edgesCount());
 			std::multimap<double, size_t> edges_list_new;//(base.mesh().edgesCount());
-			for (size_t i{}; i < base.mesh().edgesCount(); i++) edges_list.insert(std::make_pair(1e300, i));
+			for (size_t i{}; i < base.mesh().edgesCount(); i++)
+				edges_list.insert(std::make_pair(criterion->get_error(i, size), i));
 			//size_t index = 0;
 			size_t control = 0;
 
-			// TODO: может быть исходным ребрам тоже нужно изначально присвоить приоритет ???
-			for(;;){
+
+			std::chrono::high_resolution_clock::time_point first_start;
+			//std::chrono::high_resolution_clock::time_point first_end;
+			//std::chrono::high_resolution_clock::time_point last_start;
+			std::chrono::high_resolution_clock::time_point last_end;
+			std::ofstream file;
+			file.open("time.txt");
+			auto time = std::chrono::high_resolution_clock::now();
+
+			for(;;)
+			{
 			//for (; control < 5; control++) {
-				while (edges_list.size()) {
+//#ifdef _DEBUG
+				//std::cout << edges_list.size() << std::endl;
+				//std::cout << base.mesh().edgesCount() << std::endl;
+//#endif
+				//if (control == 0) {
+				//	first_start = std::chrono::high_resolution_clock::now();
+				//}
+
+				while (edges_list.size())
+				{
+					//if (control % 250 == 0) {
+					//	last_end = std::chrono::high_resolution_clock::now();
+					//	time = std::chrono::duration_cast<std::chrono::duration<double>>(last_end - first_start).count();
+					//	file << control << " " << time << std::endl;
+					//}
 					auto edge = edges_list.end();
 					edge--;
 					switch (criterion->get(edge->second, size))
@@ -56,9 +80,16 @@ namespace fg {
 					case CriterionResult::Fit:
 						break;
 					case CriterionResult::Long:
+						//control++;
 						static std::vector<size_t> edges;
 						edges.resize(0);
+						
+						//last_start = std::chrono::high_resolution_clock::now();
 						base.SubdivideEdge(edge->second, edges);
+						/*if (control == 0) {
+							first_end = std::chrono::high_resolution_clock::now();
+							control++;
+						}*/
 						for (auto i : edges) {
 							edges_list_new.insert(std::make_pair(criterion->get_error(i, size), i));
 						}
@@ -68,7 +99,12 @@ namespace fg {
 				}
 				if (edges_list_new.size() == 0) break;
 				edges_list = std::move(edges_list_new);
+				std::cout << "\nProgress: " << edges_list.size() << "        ";
 			}
+			std::cout << std::endl<< "Time: " << 
+				std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - time).count();
+			//std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(first_end - first_start).count() << std::endl;
+			//std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(last_end - last_start).count() << std::endl;
 		}
 	};
 }
