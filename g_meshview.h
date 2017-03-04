@@ -540,6 +540,30 @@ namespace fg {
 				result_edges.insert(result_edges.end(), edges.begin(), edges.end());
 		}
 
+		std::array<Mesh2::EdgeIndex, 3> CollapseEdge(const Mesh2::EdgeIndex edge) {
+			for (auto i : _mesh.PointEdges()[_mesh.edge(edge).first]) {
+				auto t = _mesh.triangle(_mesh.edge_triangle(i).first);
+				if (isBoundary(std::get<0>(t))) return NotCollapsed;
+				if (isBoundary(std::get<1>(t))) return NotCollapsed;
+				if (isBoundary(std::get<2>(t))) return NotCollapsed;
+				t = _mesh.triangle(_mesh.edge_triangle(i).second);
+				if (isBoundary(std::get<0>(t))) return NotCollapsed;
+				if (isBoundary(std::get<1>(t))) return NotCollapsed;
+				if (isBoundary(std::get<2>(t))) return NotCollapsed;
+			}
+			for (auto i : _mesh.PointEdges()[_mesh.edge(edge).second]) {
+				auto t = _mesh.triangle(_mesh.edge_triangle(i).first);
+				if (isBoundary(std::get<0>(t))) return NotCollapsed;
+				if (isBoundary(std::get<1>(t))) return NotCollapsed;
+				if (isBoundary(std::get<2>(t))) return NotCollapsed;
+				t = _mesh.triangle(_mesh.edge_triangle(i).second);
+				if (isBoundary(std::get<0>(t))) return NotCollapsed;
+				if (isBoundary(std::get<1>(t))) return NotCollapsed;
+				if (isBoundary(std::get<2>(t))) return NotCollapsed;
+			}
+			auto w = _mesh.collapseWeight(edge);
+			return _mesh.collapseEdge(edge);
+		}
 
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {
 			return MeshedLine(geometry[index].line);

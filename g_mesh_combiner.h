@@ -101,10 +101,26 @@ namespace fg {
 				edges_list = std::move(edges_list_new);
 				std::cout << "\nProgress: " << edges_list.size() << "        ";
 			}
+			std::cout << std::endl << base.mesh().get_tree_debug_info();
+			std::cout << std::endl << meshes[0]->mesh().get_tree_debug_info();
 			std::cout << std::endl<< "Time: " << 
 				std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - time).count();
 			//std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(first_end - first_start).count() << std::endl;
 			//std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(last_end - last_start).count() << std::endl;
+		}
+
+		void AddIntersectingMesh(std::shared_ptr<IMeshView> _mesh) {
+			meshes.push_back(_mesh);
+
+			for (size_t i{}; i < meshes.back()->boundary_size(); i++) {
+				base.AddLine(meshes.back()->boundary(i));
+			}
+			for (size_t i{}; i < meshes.back()->mesh().edgesCount(); i++) {
+				auto e = meshes.back()->mesh().edge(i);
+				base.AddPoint(meshes.back()->mesh().point(e.first));
+				base.AddPoint(meshes.back()->mesh().point(e.second));
+			}
+
 		}
 	};
 }

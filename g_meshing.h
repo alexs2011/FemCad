@@ -45,15 +45,22 @@ namespace fg {
 				brect.add_rect(rects[i].first);
 			}
 			// дерево для поиска тр-ков
-			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(2, std::move(rects), brect.Min(), brect.Max()));
+			auto max_depth = 5;
+			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(max_depth, 100, std::move(rects), brect.Min(), brect.Max(), max_depth));
 		}
 	public:
+//#ifdef _DEBUG
+		size_t get_tree_debug_info() const{
+			return triangle_lookup->counter;
+		}
+//#endif
 		using Edge = std::pair<size_t, size_t>;
 		using Triangle = std::tuple<size_t, size_t, size_t>;
 		using EdgeIndex = size_t;
 		using TriangleIndex = size_t;
 		using TreeTriangleIndex = size_t;
 		static const size_t NotAnEdge = 0xFFFFFFFF;
+		#define NotCollapsed {{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge}}
 		inline Mesh2() = default;
 		// Внутренняя сетка. Состоит из вершин, ребер, треугольников. Треугольники состоят из ребер, а ребра из вершин.
 		inline Mesh2(const RawMesh2& _mesh) : points{ _mesh.points } {
@@ -114,7 +121,80 @@ namespace fg {
 		}
 		Mesh2(Mesh2&&) = default;
 		Mesh2& operator=(Mesh2&&) = default;
+		inline double collapseWeight(EdgeIndex edge) const {
+			auto t = edge_triangles[edge];
+			auto es = triangles[t.first];
+			EdgeIndex e0, e1, et0, et1;
+			size_t vx, t0, t1;
+			auto tmin = 0.0;
+			auto tmax = 1.0;
+			do {
+				if (std::get<0>(es) == edge) {
+					e0 = std::get<1>(es);
+					e1 = std::get<2>(es);
+					if (edges[e1].first == edges[edge].first || edges[e1].second == edges[edge].first) {
+						std::swap(e0, e1);
+					}
+					vx = edges[e0].first == edges[edge].first ? edges[e0].second : edges[e0].first;
+				}
+				else {
+					e0 = std::get<0>(es);
+					e1 = std::get<1>(es) == edge ? std::get<2>(es) : std::get<1>(es);
+					if (edges[e1].first == edges[edge].first || edges[e1].second == edges[edge].first) {
+						std::swap(e0, e1);
+					}
+					vx = edges[e0].first == edges[edge].first ? edges[e0].second : edges[e0].first;
+				}
+				t0 = edge_triangles[e0].first == t.first ? edge_triangles[e0].second : edge_triangles[e0].first;
+				t1 = edge_triangles[e1].first == t.first ? edge_triangles[e1].second : edge_triangles[e1].first;
+				if (std::get<0>(triangles[t0]) == e0) {
+					et0 = std::get<1>(triangles[t0]);
+					if (edges[et0].first != vx && edges[et0].second != vx)
+						et0 = std::get<2>(triangles[t0]);
+				}
+				else {
+					et0 = std::get<1>(triangles[t0]);
+					if (et0 == e0)
+						et0 = std::get<2>(triangles[t0]);
+					if (edges[et0].first != vx && edges[et0].second != vx)
+						et0 = std::get<0>(triangles[t0]);
+				}
+				if (std::get<0>(triangles[t1]) == e1) {
+					et1 = std::get<1>(triangles[t1]);
+					if (edges[et1].first != vx && edges[et1].second != vx)
+						et1 = std::get<2>(triangles[t1]);
+				}
+				else {
+					et1 = std::get<1>(triangles[t1]);
+					if (et1 == e1)
+						et1 = std::get<2>(triangles[t1]);
+					if (edges[et1].first != vx && edges[et1].second != vx)
+						et1 = std::get<0>(triangles[t1]);
+				}
+				auto gett = [&](Edge p, Edge q) {
+					auto v = points[q.second] - points[q.first];
+					auto t = points[p.second] - points[p.first];
+					auto qp = points[q.first] - points[p.first];
+					auto delta = -t.x * v.y + t.y * v.x;
+					if (std::fabs(delta) < FG_EPS) return nan("");
+					auto delta_t = -qp.x * v.y + qp.y * v.x;
+					return delta_t / delta;
+				};
+				auto tt = gett(edges[edge], edges[et1]);
+				if(!std::isnan(tt)) tmin = std::max(tmin, tt);
+				tt = gett(edges[edge], edges[et0]);
+				if (!std::isnan(tt)) tmax = std::min(tmax, tt);
+				if (t.first == t.second) break;
+				t.first = t.second;
+			} while (true);
+			if (tmin>tmax) {
+				return nan("");
+			}
+			return 0.5*(tmin + tmax);
+		}
 		inline std::array<EdgeIndex, 3> collapseEdge(EdgeIndex edge, double weight = 0.5) {
+			if(isnan(weight))
+				return{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge };
 			auto e = edges[edge];
 			auto tris = edge_triangles[edge];
 			auto t0 = triangles[tris.first];
@@ -836,6 +916,9 @@ namespace fg {
 	public:
 		const TriangleLookup& lookup() const {
 			return *triangle_lookup;
+		}
+		const std::vector<std::set<EdgeIndex>>& PointEdges() const {
+			return point_edges;
 		}
 	};
 

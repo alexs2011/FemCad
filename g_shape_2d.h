@@ -20,7 +20,8 @@ namespace fg {
 				if (bsp) bsp.reset();
 				// сложим в lines все объекты линий из геометрии shape
 				std::vector<ILine*> lines;
-				for (auto i : geometry) lines.emplace_back(&getConstContext().get<ILine>(i));
+				for (auto i : geometry)
+					lines.emplace_back(&getConstContext().get<ILine>(i));
 				// построим новое дерево BSP
 				bsp = std::make_unique<BSPTree<ILine>>(BSPTree<ILine>(lines));
 			}

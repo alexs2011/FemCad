@@ -926,7 +926,8 @@ namespace fg {
 	template<int D, class T, int plane = axis::AXIS_X>
 	class FEMCADGEOMSHARED_EXPORT lookup_tree {
 		//axis plane;
-		std::unique_ptr<lookup_tree<D, T, (plane + 1) % D>> s[2];
+		//std::unique_ptr<lookup_tree<D, T, (plane + 1) % D>> s[2];
+		std::array<lookup_tree<D, T, (plane + 1) % D>*, 2> s;
 		std::vector<std::pair<rect, T>> container;
 		size_t Mx, max_depth;
 		vector3 minimum, maximum;
@@ -944,7 +945,12 @@ namespace fg {
 			s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[0]);
 			s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[1]);
 		}*/
-		lookup_tree(lookup_tree&&) = default;
+		lookup_tree(lookup_tree&& r) : container{ std::move(r.container) }, Mx{ r.Mx }, max_depth{ r.max_depth }, minimum{ r.minimum }, maximum{ r.maximum } {
+			s[0] = r.s[0];
+			s[1] = r.s[1];
+			r.s[0] = nullptr;
+			r.s[1] = nullptr;
+		}
 		lookup_tree(size_t max_depth, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max) :
 			lookup_tree(max_depth, std::max(1000U, (size_t)std::sqrt(rectangles.size()) + 10), std::move(rectangles), min, max, max_depth) {
 		}
@@ -952,15 +958,17 @@ namespace fg {
 			const vector3& min, const vector3& max, const size_t max_depth)
 			: Mx{ max_elements }, max_depth{ max_depth }
 		{
+			s[0] = nullptr;
+			s[1] = nullptr;
+			// мин и макс - координаты вершин ограниивающего пр¤моугольника, в который входит весь примитив
+			minimum = min;
+			maximum = max;
 			if (rectangles.size() < Mx || depth <= 0) {
 				container = rectangles;
 				container.reserve(Mx); 
 				return;
 			}
 			std::vector<std::pair<rect, T>> front, back;
-			// мин и макс - координаты вершин ограниивающего пр¤моугольника, в который входит весь примитив
-			minimum = min;
-			maximum = max;
 			// усредн¤ем координаты х вершин мин и макс ограничивающего пр¤моугольника
 			double midaxis = 0.5 * (minimum[plane] + maximum[plane]);
 			for (size_t i = 0U; i < rectangles.size(); i++) {
@@ -970,9 +978,24 @@ namespace fg {
 			}
 			vector3 nmin = min; nmin[plane] = midaxis;
 			vector3 nmax = max; nmax[plane] = midaxis;
-			if (back.size()) s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(back), min, nmax, max_depth)));
-			if (front.size()) s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(front), nmin, max, max_depth)));
+			if (back.size())
+				//s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(back), min, nmax, max_depth)));
+				s[0] = new lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(back), min, nmax, max_depth);
+			if (front.size())
+				//s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(front), nmin, max, max_depth)));
+				s[1] = new lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(front), nmin, max, max_depth);
 		}
+		~lookup_tree() {
+			if (s[0]) {
+				delete s[0];
+				s[0] = nullptr;
+			}
+			if (s[1]) {
+				delete s[1];
+				s[1] = nullptr;
+			}
+		}
+
 
 		// находит все элементы дерева, которые пересекаютс¤ с данным пр¤моугольником
 		inline void get_overlap(const rect& r, std::set<T>& output) const {
@@ -985,9 +1008,10 @@ namespace fg {
 				}
 			}
 		}
-
+		mutable size_t counter = 0;
 		inline void get_overlap(const vector3& r, std::vector<T>& output) const {
 			auto mid = (0.5*(maximum[plane] + minimum[plane]));
+			counter++;
 			auto c = r[plane] < mid ? -1 : r[plane] > mid ? 1 : 0;
 			if (c<=0 && s[0]) s[0]->get_overlap(r, output);
 			if (c>=0 && s[1]) s[1]->get_overlap(r, output);
@@ -1018,10 +1042,14 @@ namespace fg {
 					container.shrink_to_fit();
 					vector3 nmin = minimum; nmin[plane] = midaxis;
 					vector3 nmax = maximum; nmax[plane] = midaxis;
-					if (back.size()) s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
+					if (back.size()) 
+						//s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(\
 						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(back), minimum, nmax, max_depth)));
-					if (front.size()) s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
+						s[0] = new lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(back), minimum, nmax, max_depth);
+					if (front.size()) 
+						//s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(\
 						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(front), nmin, maximum, max_depth)));
+						s[1] = new lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(front), nmin, maximum, max_depth);
 				}
 				return;
 			}
@@ -1031,16 +1059,18 @@ namespace fg {
 				if (s[0]) s[0]->add_element(element, depth + 1);
 				else /*if (max_depth > depth)*/ {
 					vector3 nmax = maximum; nmax[plane] = midaxis;
-					s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
+					//s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(\
 						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), minimum, nmax, max_depth)));
+					s[0] = new lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), minimum, nmax, max_depth);
 				}
 			}
 			if (c >= 0)
 				if (s[1]) s[1]->add_element(element, depth + 1);
 				else /*if (max_depth > depth)*/ {
 					vector3 nmin = minimum; nmin[plane] = midaxis;
-					s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(
+					//s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(\
 						lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), nmin, maximum, max_depth)));
+					s[1] = new lookup_tree<D, T, (plane + 1) % D>(max_depth - depth - 1, Mx, std::move(std::vector<std::pair<rect, T>>{ element }), nmin, maximum, max_depth);
 				}
 		}
 
