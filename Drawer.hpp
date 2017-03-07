@@ -55,26 +55,40 @@ const double Drawer::viewHeight = 4.0;
 void calcBoundaries(int w, int h, double xChange, double yChange, double scale,
 	double& xMin, double& xMax, double& yMin, double& yMax)
 {
-	xChange = 0.0;
-	yChange = 0.0;
-	scale = 1.0;
+	//xChange = 0.0;
+	//yChange = 0.0;
+	//scale = 1.0;
 	double ww = w, hh = h;
-	double viewWidth = Drawer::viewWidth * scale;
-	double viewHeight = Drawer::viewHeight * scale;
+	xChange /= scale;
+	yChange /= scale;
+	double viewWidth = Drawer::viewWidth / scale;
+	double viewHeight = Drawer::viewHeight / scale;
 	if (w > h)
 	{
-		xMin = -viewWidth * (ww / hh) - xChange;
-		xMax = viewWidth * (ww / hh) - xChange;
-		yMin = -viewHeight - yChange;
-		yMax = viewHeight - yChange;
+		xMin = -viewWidth * (ww / hh) + xChange;
+		xMax = viewWidth * (ww / hh) + xChange;
+		yMin = -viewHeight + yChange;
+		yMax = viewHeight + yChange;
 	}
 	else
 	{
-		xMin = -viewWidth - xChange;
-		xMax = viewWidth - xChange;
-		yMin = -viewHeight * (hh / ww) - yChange;
-		yMax = viewHeight * (hh / ww) - yChange;
+		xMin = -viewWidth + xChange;
+		xMax = viewWidth + xChange;
+		yMin = -viewHeight * (hh / ww) + yChange;
+		yMax = viewHeight * (hh / ww) + yChange;
 	}
+	std::cout << "xChange " << xChange << " yChange " << yChange << " scale " << scale << std::endl;
+}
+
+void set_perspective()
+{
+	int w = glutGet(GLUT_WINDOW_WIDTH);
+	int h = glutGet(GLUT_WINDOW_HEIGHT);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	double xMin, xMax, yMin, yMax;
+	calcBoundaries(w, h, xChange, yChange, scale, xMin, xMax, yMin, yMax);
+	glOrtho(xMin, xMax, yMin, yMax, -2.0, 2.0);
 }
 
 void processSpecialKeys(int key, int xx, int yy)
@@ -94,6 +108,7 @@ void processSpecialKeys(int key, int xx, int yy)
 		yChange -= fraction;
 		break;
 	}
+	set_perspective();
 	glutPostRedisplay();
 }
 
@@ -112,17 +127,12 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 		exit(0);
 		break;
 	}
+	set_perspective();
 	glutPostRedisplay();
 }
 
 void reshape(int w, int h)
 {
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	double xMin, xMax, yMin, yMax;
-	calcBoundaries(w, h, xChange, yChange, scale, xMin, xMax, yMin, yMax);
-	glOrtho(xMin, xMax, yMin, yMax, -2.0, 2.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	set_perspective();
 }

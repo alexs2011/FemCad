@@ -227,7 +227,8 @@ namespace fg {
 
 			auto r0 = (c->position() - p0ptr()->position()).lengthSq();
 			auto r1 = (c->position() - p1ptr()->position()).lengthSq();
-			if (std::fabs(r0 - r1) > FG_EPS) throw std::logic_error("Unable to define circle");
+			if (std::fabs(r0 - r1) > FG_EPS)
+				throw std::logic_error("Unable to define circle");
 			_curve = square_curve::circle(r0, c->position());
 			_curve.cache_parametrization(p0ptr()->position(), p1ptr()->position(), cached_matrix, cached_t0, cached_t1);
 			cached_matrix_inv = cached_matrix.get_inversed();

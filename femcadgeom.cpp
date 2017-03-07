@@ -32,29 +32,30 @@ void FemCadGeomTester::Launch()
 	Scene main_scene;
 	SETTINGHANDLE vs = std::make_shared<VertexSetting>(VertexSetting());
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting());
-	ls_1->setParameter("N", DoubleParameter(42));
+	ls_1->setParameter("N", DoubleParameter(1));
 	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting());
-	ls_2->setParameter("N", DoubleParameter(20));
-	ls_2->setParameter("q", DoubleParameter(1.3));
+	ls_2->setParameter("N", DoubleParameter(10));
+	ls_2->setParameter("q", DoubleParameter(1.));
 	SETTINGHANDLE ls_3 = std::make_shared<LineSetting>(LineSetting());
-	ls_3->setParameter("N", DoubleParameter(20));
-	ls_3->setParameter("q", DoubleParameter(1/1.3));
+	ls_3->setParameter("N", DoubleParameter(10));
+	ls_3->setParameter("q", DoubleParameter(1/1.));
 	SETTINGHANDLE ls_4 = std::make_shared<LineSetting>(LineSetting());
-	ls_4->setParameter("N", DoubleParameter(20));
+	ls_4->setParameter("N", DoubleParameter(10));
 	ls_4->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
 
 	GHANDLE v0 = Vertex(s, vs, { -3,-3,0 }).getHandle();
-	GHANDLE v1 = Vertex(s, vs, { 3,-3,0 }).getHandle();
+	GHANDLE v1 = Vertex(s, vs, { 5,-3,0 }).getHandle();
 	GHANDLE v2 = Vertex(s, vs, { -3,3,0 }).getHandle();
-	GHANDLE v3 = Vertex(s, vs, { 3,3,0 }).getHandle();
+	GHANDLE v3 = Vertex(s, vs, { 5,3,0 }).getHandle();
 	GHANDLE v4 = Vertex(s2, vs, { 0,-1,0 }).getHandle();
-	GHANDLE v5 = Vertex(s2, vs, { 3,-1,0 }).getHandle();
+	GHANDLE v5 = Vertex(s2, vs, { 4,-1,0 }).getHandle();
 	GHANDLE v6 = Vertex(s2, vs, { 0,1,0 }).getHandle();
-	GHANDLE v7 = Vertex(s2, vs, { 2.9,1,0 }).getHandle();
+	GHANDLE v7 = Vertex(s2, vs, { 4.0,1,0 }).getHandle();
+	GHANDLE c = Vertex(s2, vs, { 2,0,0 }).getHandle();
 	//GHANDLE v6 = Vertex(s, vs, { 0,2,0 }).getHandle();
 	//GHANDLE v7 = Vertex(s, vs, { -0.5,1,0 }).getHandle();
 	/*GHANDLE v4 = Vertex(s, vs, { 1.5,2,0 }).getHandle();
@@ -89,22 +90,22 @@ void FemCadGeomTester::Launch()
 
 	auto& rsh = main_scene.get<primitive::Shape>(GeometryUtility::ApplyCSG(main_scene, CSGOperation::Subtract, sh_base, sh_form0));
 
-	globalCSGDrawer.draw(&rsh);
-	globalCSGDrawer.init();
+	//globalCSGDrawer.draw(&rsh);
+	//globalCSGDrawer.init();
 
 	MeshCombiner combiner{ RectMeshView(rect_base) };
 	combiner.SetCriterion<OnePointCriterion>();
 	
-	//combiner.AddMesh(mesh_form0);
-	//MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
-	//combiner.AdjustMesh(size);
+	combiner.AddMesh(mesh_form0);
+	MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
+	combiner.AdjustMesh(size);
 	//combiner.AddIntersectingMesh(mesh_form0);
 
-	//globalMeshDrawer.draw(combiner);
+	globalMeshDrawer.draw(combiner);
 	//globalMeshDrawer.draw(*mesh_form0);
 	//globalMeshDrawer.draw(*rsh);
 
-	//globalMeshDrawer.init();
+	globalMeshDrawer.init();
 	//Scene s, s1, main_scene;
 	//
 	//SETTINGHANDLE vs = std::make_shared<VertexSetting>(VertexSetting());

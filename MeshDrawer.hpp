@@ -53,12 +53,13 @@ void display(void)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(1);
 
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glPushMatrix();
 	glScaled(scale, scale, 0.0);
 	glTranslatef(-xChange, -yChange, 0.0f);
 	glColor3d(0.0, 0.0, 0.0);
-	double xMax = 0.0, xMin = 0.0, yMax = 0.0, yMin = 0.0;
+	//double xMax = 0.0, xMin = 0.0, yMax = 0.0, yMin = 0.0;
 	for (auto meshview : meshes) {
 		const auto& _mesh = meshview->mesh();
 		for (size_t i = 0; i < _mesh.edgesCount(); ++i) {
@@ -71,10 +72,10 @@ void display(void)
 			auto e = _mesh.edge(i);
 			auto draw_p = [&](double x, double y, double z) {
 				glVertex3d(x, y, z);
-				if (x > xMax) xMax = x;
+				/*if (x > xMax) xMax = x;
 				if (x < xMin) xMin = x;
 				if (y > yMax) yMax = y;
-				if (y < yMin) yMin = y;
+				if (y < yMin) yMin = y;*/
 			};
 			// рисуем ребро
 			glBegin(GL_LINES);
@@ -94,16 +95,26 @@ void display(void)
 			glEnd();
 		}
 	}
+	//glPopMatrix();
+
 	
+	
+	// определим размеры сцены (т.е. какой прмоугльоник сцены захватывает наша камера)
+	int w = glutGet(GLUT_WINDOW_WIDTH);
+	int h = glutGet(GLUT_WINDOW_HEIGHT);
+	double xMax, xMin, yMax, yMin, x, y;
+	calcBoundaries(w, h, xChange, yChange, scale, xMin, xMax, yMin, yMax);
 	// рисуем координатные оси
 	glColor3f(0.3f, 0.3f, 0.3f);
 	glLineWidth(1);
+	//glPushMatrix();
+	//glTranslatef(-xChange, -yChange, 0.0f);
 	glBegin(GL_LINES);
 	glColor3d(0.0, 1.0, 0.0);
-	glVertex3d((xMin - 6), (0.0), 1.0);
-	glVertex3d((xMax + 6), (0.0), 1.0);
-	glVertex3d((0.0), (yMin - 6), 1.0);
-	glVertex3d((0.0), (yMax + 6), 1.0);
+	glVertex3d(2*xMin, (0.0), 1.0);
+	glVertex3d(2 * xMax, (0.0), 1.0);
+	glVertex3d(0.0, 2 * yMin, 1.0);
+	glVertex3d(0.0, 2 * yMax, 1.0);
 	glEnd();
 	glPopMatrix();
 
