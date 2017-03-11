@@ -36,21 +36,21 @@ void FemCadGeomTester::Launch()
 	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting());
-	ls_2->setParameter("N", DoubleParameter(10));
-	ls_2->setParameter("q", DoubleParameter(1.));
+	ls_2->setParameter("N", DoubleParameter(5));
+	ls_2->setParameter("q", DoubleParameter(1.3));
 	SETTINGHANDLE ls_3 = std::make_shared<LineSetting>(LineSetting());
-	ls_3->setParameter("N", DoubleParameter(10));
-	ls_3->setParameter("q", DoubleParameter(1/1.));
+	ls_3->setParameter("N", DoubleParameter(5));
+	ls_3->setParameter("q", DoubleParameter(1/1.3));
 	SETTINGHANDLE ls_4 = std::make_shared<LineSetting>(LineSetting());
-	ls_4->setParameter("N", DoubleParameter(10));
-	ls_4->setParameter("q", DoubleParameter(1.));
+	ls_4->setParameter("N", DoubleParameter(5));
+	ls_4->setParameter("q", DoubleParameter(1.3));
 
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
 
 	GHANDLE v0 = Vertex(s, vs, { -3,-3,0 }).getHandle();
-	GHANDLE v1 = Vertex(s, vs, { 5,-3,0 }).getHandle();
+	GHANDLE v1 = Vertex(s, vs, { 3,-3,0 }).getHandle();
 	GHANDLE v2 = Vertex(s, vs, { -3,3,0 }).getHandle();
-	GHANDLE v3 = Vertex(s, vs, { 5,3,0 }).getHandle();
+	GHANDLE v3 = Vertex(s, vs, { 3,3,0 }).getHandle();
 	GHANDLE v4 = Vertex(s2, vs, { 0,-1,0 }).getHandle();
 	GHANDLE v5 = Vertex(s2, vs, { 4,-1,0 }).getHandle();
 	GHANDLE v6 = Vertex(s2, vs, { 0,1,0 }).getHandle();
@@ -69,10 +69,10 @@ void FemCadGeomTester::Launch()
 	GHANDLE l2 = LineSegment(s, ls_1, v3, v2).getHandle();
 	GHANDLE l3 = LineSegment(s, ls_1, v2, v0).getHandle();
 
-	GHANDLE l4 = LineSegment(s2, ls_2, v4, v5).getHandle();
-	GHANDLE l5 = LineSegment(s2, ls_4, v5, v7).getHandle();
-	GHANDLE l6 = LineSegment(s2, ls_3, v7, v6).getHandle();
-	GHANDLE l7 = LineSegment(s2, ls_4, v6, v4).getHandle();
+	GHANDLE l4 = EllipticSegment(s2, ls_2, v4, v5, c).getHandle();
+	GHANDLE l5 = EllipticSegment(s2, ls_4, v5, v7, c).getHandle();
+	GHANDLE l6 = EllipticSegment(s2, ls_3, v7, v6, c).getHandle();
+	GHANDLE l7 = EllipticSegment(s2, ls_4, v6, v4, c).getHandle();
 
 	GHANDLE shape_base = primitive::Shape(s, ps, s, { l0, l1, l2, l3 }).getHandle();
 	GHANDLE shape_form0 = primitive::Shape(s2, ps, s2, { l4, l5, l6, l7 }).getHandle();
@@ -90,22 +90,23 @@ void FemCadGeomTester::Launch()
 
 	auto& rsh = main_scene.get<primitive::Shape>(GeometryUtility::ApplyCSG(main_scene, CSGOperation::Subtract, sh_base, sh_form0));
 
-	//globalCSGDrawer.draw(&rsh);
-	//globalCSGDrawer.init();
+	globalCSGDrawer.draw(&rsh);
+	globalCSGDrawer.init();
 
 	MeshCombiner combiner{ RectMeshView(rect_base) };
 	combiner.SetCriterion<OnePointCriterion>();
 	
 	combiner.AddMesh(mesh_form0);
 	MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
-	combiner.AdjustMesh(size);
+	//combiner.AdjustMesh(size);
 	//combiner.AddIntersectingMesh(mesh_form0);
 
-	globalMeshDrawer.draw(combiner);
+
+	//globalMeshDrawer.draw(combiner);
 	//globalMeshDrawer.draw(*mesh_form0);
 	//globalMeshDrawer.draw(*rsh);
 
-	globalMeshDrawer.init();
+	//globalMeshDrawer.init();
 	//Scene s, s1, main_scene;
 	//
 	//SETTINGHANDLE vs = std::make_shared<VertexSetting>(VertexSetting());

@@ -93,6 +93,9 @@ namespace fg {
 				}
 			}
 		};
+#ifdef _DEBUG
+	public:
+#endif
 		// Внутренняя сетка. Состоит из вершин, ребер, треугольников. Треугольники состоят из ребер, а ребра из вершин.
 		Mesh2 _mesh;
 		// коллекция линий геометрии
@@ -468,6 +471,8 @@ namespace fg {
 			auto mline = _meshLineView(line.line);
 			edges.resize(0);
 			edges.insert(edges.end(), edges_set.begin(), edges_set.end());
+			size_t sz = geometry.size();
+			geoms.clear();
 			for (size_t i{}; i < edges.size(); ++i) {
 				int_common.resize(0);
 				auto e = _mesh.edge(edges[i]);
@@ -490,8 +495,8 @@ namespace fg {
 						double t0 = line.line.getParam(v0);
 						double t1 = line.line.getParam(v1);
 						mline.force_add(std::min(t0, t1), edges[i]);
-					
-						_edgeGeometry[edges[i]].push_back(geometry.size());
+						geoms.push_back(edges[i]);
+						//_edgeGeometry[].push_back(sz);
 					
 						continue;
 					}
@@ -499,6 +504,14 @@ namespace fg {
 					AddPoint(int_common[1], &edges);
 					break;
 				}
+			}
+			
+			for (auto i : geoms) {
+				if (mline.get(mline.pos[i]) != i) {
+					mline.pos.erase(i);
+					continue;
+				}
+				_edgeGeometry[i].push_back(sz);
 			}
 			geometry.push_back(mline);
 			return;
@@ -562,7 +575,7 @@ namespace fg {
 				if (isBoundary(std::get<2>(t))) return NotCollapsed;
 			}
 			auto w = _mesh.collapseWeight(edge);
-			return _mesh.collapseEdge(edge);
+			return _mesh.collapseEdge(edge, w);
 		}
 
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {

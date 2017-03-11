@@ -378,21 +378,21 @@ namespace fg {
 				std::swap(edge_triangles[edge], edge_triangles.back());
 				edge_triangles.pop_back();
 				std::swap(edges[edge], edges.back());
-				edges.pop_back(); sz--; be[0] = edge;
+				edges.pop_back(); sz--; be[0] = edge >= edges.size() ? NotAnEdge : edge;
 			}
 			if (et0 == sz) { edges.pop_back(); edge_triangles.pop_back(); sz--; }
 			else {
 				clean_up_last_triangle(et0, sz);
 				std::swap(edge_triangles[et0], edge_triangles.back());
 				edge_triangles.pop_back();
-				std::swap(edges[et0], edges.back()); edges.pop_back(); sz--; be[1] = et0;
+				std::swap(edges[et0], edges.back()); edges.pop_back(); sz--; be[1] = et0 >= edges.size() ? NotAnEdge : et0;
 			}
 			if (et1 == sz) { edges.pop_back(); edge_triangles.pop_back(); sz--; }
 			else if (et0 != et1) {
 				clean_up_last_triangle(et1, sz);
 				std::swap(edge_triangles[et1], edge_triangles.back());
 				edge_triangles.pop_back();
-				std::swap(edges[et1], edges.back()); edges.pop_back(); sz--; be[2] = et1;
+				std::swap(edges[et1], edges.back()); edges.pop_back(); sz--; be[2] = et1 >= edges.size() ? NotAnEdge : et1;
 			}
 
 			return be;

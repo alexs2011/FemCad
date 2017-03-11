@@ -1402,6 +1402,7 @@ namespace fg {
 			else {
 				if (t0 < 0) t0 += 2 * PI;
 				else t1 += 2 * PI;
+				if (tt < 0) tt += 2 * PI;
 				return (tt - t0) / (t1 - t0);
 			}
 		}
