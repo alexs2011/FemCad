@@ -85,14 +85,14 @@ void display(void)
 			draw_p(p.x, p.y, p.z);
 			glEnd();
 			// рисуем вершины ребра
-			glPointSize(7.0);
-			glColor3f(0.2f, 0.2f, 0.2f);
-			glBegin(GL_POINTS);
-			p = _mesh.getCoordsByPointIdx(e.first);
-			glVertex3d(p.x, p.y, p.z-1.0);
-			p = _mesh.getCoordsByPointIdx(e.second);
-			glVertex3d(p.x, p.y, p.z - 1.0);
-			glEnd();
+			//glPointSize(7.0);
+			//glColor3f(0.2f, 0.2f, 0.2f);
+			//glBegin(GL_POINTS);
+			//p = _mesh.getCoordsByPointIdx(e.first);
+			//glVertex3d(p.x, p.y, p.z-1.0);
+			//p = _mesh.getCoordsByPointIdx(e.second);
+			//glVertex3d(p.x, p.y, p.z - 1.0);
+			//glEnd();
 		}
 	}
 	//glPopMatrix();

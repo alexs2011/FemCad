@@ -484,7 +484,9 @@ namespace fg {
 				m03 * (m10 * m21 * m32 + m11 * m22 * m30 + m12 * m20 * m31 - m12 * m21 * m30 -
 					m10 * m22 * m31 - m11 * m20 * m32);
 		}
-		inline matrix4x4 get_inversed() const {
+
+		inline matrix4x4 get_inversed() const
+		{
 			matrix4x4 result;
 			double det = 1.0 / determinant();
 			for (int i = 0; i < 4; i++) {
@@ -494,6 +496,7 @@ namespace fg {
 			}
 			return result;
 		}
+
 		inline double minor(size_t ii, size_t jj)const {
 			size_t i_ind[3];
 			size_t j_ind[3];
@@ -913,9 +916,6 @@ namespace fg {
 		inline bool itersect(const rect& p) const {
 			return !(max.x < p.min.x || max.y < p.min.y || max.z < p.min.z ||
 				min.x > p.max.x || min.y > p.max.y || min.z > p.max.z);
-			//&& 
-			//!(p.max.x < min.x || p.max.y < min.y || p.max.z < min.z ||
-			//  p.min.x > max.x || p.min.y > max.y || p.min.z > max.z);
 		}
 		template<int A>
 		inline int classify_by(double x) const {
@@ -924,36 +924,25 @@ namespace fg {
 	};
 
 	template<int D, class T, int plane = axis::AXIS_X>
-	class FEMCADGEOMSHARED_EXPORT lookup_tree {
-		//axis plane;
-		//std::unique_ptr<lookup_tree<D, T, (plane + 1) % D>> s[2];
+	class FEMCADGEOMSHARED_EXPORT lookup_tree
+	{
 		std::array<lookup_tree<D, T, (plane + 1) % D>*, 2> s;
 		std::vector<std::pair<rect, T>> container;
 		size_t Mx, max_depth;
 		vector3 minimum, maximum;
 	public:
-		/*lookup_tree(const lookup_tree<D, T, plane>& t) :Mx{ t.Mx }, max_depth{ t.max_depth }, minimum{ t.minimum }, maximum{ t.maximum }, container{ t.container } {
-			s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[0]);
-			s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[1]);
-		}*/
-		/*lookup_tree<D,T,plane>& operator=(const lookup_tree<D, T, plane>& t) {
-			Mx = t.Mx;
-			max_depth = t.max_depth;
-			minimum = t.minimum;
-			maximum = t.maximum;
-			container = t.container;
-			s[0] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[0]);
-			s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(t.s[1]);
-		}*/
-		lookup_tree(lookup_tree&& r) : container{ std::move(r.container) }, Mx{ r.Mx }, max_depth{ r.max_depth }, minimum{ r.minimum }, maximum{ r.maximum } {
+		lookup_tree(lookup_tree&& r) : container{ std::move(r.container) }, Mx{ r.Mx }, max_depth{ r.max_depth }, minimum{ r.minimum }, maximum{ r.maximum }
+		{
 			s[0] = r.s[0];
 			s[1] = r.s[1];
 			r.s[0] = nullptr;
 			r.s[1] = nullptr;
 		}
+
 		lookup_tree(size_t max_depth, std::vector<std::pair<rect, T>>&& rectangles, const vector3& min, const vector3& max) :
 			lookup_tree(max_depth, std::max(1000U, (size_t)std::sqrt(rectangles.size()) + 10), std::move(rectangles), min, max, max_depth) {
 		}
+
 		lookup_tree(size_t depth, size_t max_elements, std::vector<std::pair<rect, T>>&& rectangles,
 			const vector3& min, const vector3& max, const size_t max_depth)
 			: Mx{ max_elements }, max_depth{ max_depth }
@@ -985,7 +974,9 @@ namespace fg {
 				//s[1] = std::make_unique<lookup_tree<D, T, (plane + 1) % D>>(std::move(lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(front), nmin, max, max_depth)));
 				s[1] = new lookup_tree<D, T, (plane + 1) % D>(depth - 1, Mx, std::move(front), nmin, max, max_depth);
 		}
-		~lookup_tree() {
+
+		~lookup_tree()
+		{
 			if (s[0]) {
 				delete s[0];
 				s[0] = nullptr;
@@ -996,9 +987,9 @@ namespace fg {
 			}
 		}
 
-
 		// находит все элементы дерева, которые пересекаютс¤ с данным пр¤моугольником
-		inline void get_overlap(const rect& r, std::set<T>& output) const {
+		inline void get_overlap(const rect& r, std::set<T>& output) const
+		{
 			auto c = r.classify_by<plane>(0.5*(maximum[plane] + minimum[plane]));
 			if (c <= 0 && s[0]) s[0]->get_overlap(r, output);
 			if (c >= 0 && s[1]) s[1]->get_overlap(r, output);
@@ -1008,22 +999,27 @@ namespace fg {
 				}
 			}
 		}
+
 		mutable size_t counter = 0;
-		inline void get_overlap(const vector3& r, std::vector<T>& output) const {
+
+		// находит все элементы дерева, на которые попадает данная точка
+		inline void get_overlap(const vector3& r, std::vector<T>& output) const
+		{
 			auto mid = (0.5*(maximum[plane] + minimum[plane]));
 			counter++;
 			auto c = r[plane] < mid ? -1 : r[plane] > mid ? 1 : 0;
-			if (c<=0 && s[0]) s[0]->get_overlap(r, output);
-			if (c>=0 && s[1]) s[1]->get_overlap(r, output);
-			for (auto& i : container) {
-				if (i.first.itersect(r)) {
+			if (c<=0 && s[0])
+				s[0]->get_overlap(r, output);
+			if (c>=0 && s[1])
+				s[1]->get_overlap(r, output);
+			for (auto& i : container)
+				if (i.first.itersect(r))
 					output.push_back(i.second);
-				}
-			}
 			return;
 		}
 
-		inline void add_element(const std::pair<rect, T>& element, size_t depth = 0) {
+		inline void add_element(const std::pair<rect, T>& element, size_t depth = 0)
+		{
 			if (depth == max_depth) { // || container.size() < Mx
 				container.push_back(element);
 				return;

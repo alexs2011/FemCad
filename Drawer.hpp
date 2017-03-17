@@ -77,7 +77,7 @@ void calcBoundaries(int w, int h, double xChange, double yChange, double scale,
 		yMin = -viewHeight * (hh / ww) + yChange;
 		yMax = viewHeight * (hh / ww) + yChange;
 	}
-	std::cout << "xChange " << xChange << " yChange " << yChange << " scale " << scale << std::endl;
+	//std::cout << "xChange " << xChange << " yChange " << yChange << " scale " << scale << std::endl;
 }
 
 void set_perspective()

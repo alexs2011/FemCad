@@ -3,7 +3,8 @@
 
 namespace fg {
 	template<class S>
-	class IElementSize {
+	class IElementSize
+	{
 	public:
 		IElementSize() = default;
 		IElementSize(const IElementSize&) = default;
@@ -12,7 +13,8 @@ namespace fg {
 	};
 
 	template<class S>
-	class MeshElementSize : public IElementSize<S>{
+	class MeshElementSize : public IElementSize<S>
+	{
 	protected:
 		const Mesh2& _mesh;
 	public:
@@ -21,29 +23,41 @@ namespace fg {
 		//MeshE
 	};
 
-	class MeshElementSizeIsoMaxEdgeLength : public MeshElementSize<double> {
+	class MeshElementSizeIsoMaxEdgeLength : public MeshElementSize<double>
+	{
 	public:
 		using MeshElementSize<double>::MeshElementSize;
 		MeshElementSizeIsoMaxEdgeLength(const MeshElementSizeIsoMaxEdgeLength&) = default;
+
 		virtual vector3 get_size_aniso(const vector3& point) const {
 			return get_size(point);
 		}
-		double get_size(const vector3& point) const override {
+
+		// возвращает скалярное произведение l-координат треугольника на длину максимального ребра треугольника
+		double get_size(const vector3& point) const override
+		{
+			// индексы точек треугольника, на который попадает point
 			std::tuple<size_t, size_t, size_t> verts;
+			// преобразованные с помощью обратной трансформационной матрицы координаты точки point
+			// похоже, что это l-координаты: http://dolivanov.ru/sites/default/files/_13.pdf ???
 			auto res = _mesh.cast(point, verts);
 			return res & vector3{ max_edge(std::get<0>(verts)), max_edge(std::get<1>(verts)), max_edge(std::get<2>(verts)) };
 		}
-		// ищется максимальное ребро
-		double max_edge(size_t vertex) const {
+
+		// ищется максимальное ребро (хотя внутри ищется минимальное ребро, т.е. с наименьшей длиной) ???
+		// может быть ошибка ???
+		double max_edge(size_t vertex) const
+		{
 			double res = std::numeric_limits<double>::max();
-			for (auto i : _mesh.point_edge(vertex)) {
+			for (auto i : _mesh.point_edge(vertex))
 				res = std::min(res, _mesh.edge_length_sq(i));
-			}
 			return std::sqrt(res);
 		}
 	};
+
 	template<class S>
-	class ComplexElementSize : public IElementSize<S> {
+	class ComplexElementSize : public IElementSize<S>
+	{
 	protected:
 		std::vector<IElementSize<S>> collection;
 	public:
@@ -51,8 +65,10 @@ namespace fg {
 		ComplexElementSize(It _esBegin, It _esEnd) : collection(_esBegin, _esEnd){}
 		virtual S get_size(const vector3& point) const = 0;
 	};
+
 	template<class S>
-	class ComplexElementSizeMinimal : public ComplexElementSize<S> {
+	class ComplexElementSizeMinimal : public ComplexElementSize<S>
+	{
 	public:
 		template<class It>
 		ComplexElementSizeMinimal(It _esBegin, It _esEnd) : ComplexElementSize<S>(_esBegin, _esEnd) {}
@@ -60,6 +76,7 @@ namespace fg {
 			return std::min(collection.begin(), collection.end(), [&](const IElementSize<S>& e) { return e(point); });
 		}
 	};
+
 	typedef ComplexElementSizeMinimal<double> ComplexElementSizeMinimalIso;
 	typedef ComplexElementSizeMinimal<vector3> ComplexElementSizeMinimalAniso;
 }

@@ -45,22 +45,22 @@ namespace fg {
 				brect.add_rect(rects[i].first);
 			}
 			// дерево для поиска тр-ков
-			auto max_depth = 5;
+			auto max_depth = 2;
 			triangle_lookup = std::make_unique<TriangleLookup>(TriangleLookup(max_depth, 100, std::move(rects), brect.Min(), brect.Max(), max_depth));
 		}
 	public:
-//#ifdef _DEBUG
-		size_t get_tree_debug_info() const{
+		//#ifdef _DEBUG
+		size_t get_tree_debug_info() const {
 			return triangle_lookup->counter;
 		}
-//#endif
+		//#endif
 		using Edge = std::pair<size_t, size_t>;
 		using Triangle = std::tuple<size_t, size_t, size_t>;
 		using EdgeIndex = size_t;
 		using TriangleIndex = size_t;
 		using TreeTriangleIndex = size_t;
 		static const size_t NotAnEdge = 0xFFFFFFFF;
-		#define NotCollapsed {{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge}}
+#define NotCollapsed {{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge}}
 		inline Mesh2() = default;
 		// Внутренняя сетка. Состоит из вершин, ребер, треугольников. Треугольники состоят из ребер, а ребра из вершин.
 		inline Mesh2(const RawMesh2& _mesh) : points{ _mesh.points } {
@@ -181,19 +181,19 @@ namespace fg {
 					return delta_t / delta;
 				};
 				auto tt = gett(edges[edge], edges[et1]);
-				if(!std::isnan(tt)) tmin = std::max(tmin, tt);
+				if (!std::isnan(tt)) tmin = std::max(tmin, tt);
 				tt = gett(edges[edge], edges[et0]);
 				if (!std::isnan(tt)) tmax = std::min(tmax, tt);
 				if (t.first == t.second) break;
 				t.first = t.second;
 			} while (true);
-			if (tmin>tmax) {
+			if (tmin > tmax) {
 				return nan("");
 			}
 			return 0.5*(tmin + tmax);
 		}
 		inline std::array<EdgeIndex, 3> collapseEdge(EdgeIndex edge, double weight = 0.5) {
-			if(isnan(weight))
+			if (isnan(weight))
 				return{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge };
 			auto e = edges[edge];
 			auto tris = edge_triangles[edge];
@@ -264,29 +264,59 @@ namespace fg {
 			//remove_edge_from_tree(edge);
 			//remove_edge_from_tree(et0);
 			//if (et0 != et1) remove_edge_from_tree(et1);
-
-			auto tt0i = edge_triangles[et0].first == tris.first ? edge_triangles[et0].second : edge_triangles[et0].first;
-			auto& tt0 = triangles[tt0i];
-			auto old_t = tt0;
-			if (std::get<0>(tt0) == et0) std::get<0>(tt0) = ot0;
-			else if (std::get<1>(tt0) == et0) std::get<1>(tt0) = ot0;
-			else if (std::get<2>(tt0) == et0) std::get<2>(tt0) = ot0;
-			fix_triangle_rect(old_t, tt0i);
-
-			auto tt1i = edge_triangles[et1].first == tris.first ? edge_triangles[et1].second : edge_triangles[et1].first;
-			auto& tt1 = triangles[tt1i];
-			old_t = tt1;
-			if (std::get<0>(tt1) == et1) std::get<0>(tt1) = ot1;
-			else if (std::get<1>(tt1) == et1) std::get<1>(tt1) = ot1;
-			else if (std::get<2>(tt1) == et1) std::get<2>(tt1) = ot1;
-			fix_triangle_rect(old_t, tt1i);
-
-			std::array<size_t, 3> be;
-			size_t sz = triangles.size() - 1;
 			remove_triangle_from_tree(tris.first);
 			if (tris.first != tris.second) {
 				remove_triangle_from_tree(tris.second);
 			}
+
+			point_edges[edges[et0].first].erase(et0);
+			point_edges[edges[et0].second].erase(et0);
+			point_edges[edges[et1].first].erase(et1);
+			point_edges[edges[et1].second].erase(et1);
+
+			auto tt0i = edge_triangles[et0].first == tris.first ? edge_triangles[et0].second : edge_triangles[et0].first;
+			auto& tt0 = triangles[tt0i];
+			auto old_t = tt0;
+
+			auto ott0i = edge_triangles[ot0].first == tris.first ? edge_triangles[ot0].second : edge_triangles[ot0].first;
+			rect ott0 = get_rect(triangles[ott0i]);
+			rect ett0 = get_rect(old_t);
+			if (std::get<0>(tt0) == et0) std::get<0>(tt0) = ot0;
+			else if (std::get<1>(tt0) == et0) std::get<1>(tt0) = ot0;
+			else if (std::get<2>(tt0) == et0) std::get<2>(tt0) = ot0;
+			if (edge_triangles[ot0].first == tris.first) {
+				edge_triangles[ot0].first = tt0i;
+			}
+			else {
+				edge_triangles[ot0].second = tt0i;
+			}
+
+
+			auto tt1i = edge_triangles[et1].first == tris.second ? edge_triangles[et1].second : edge_triangles[et1].first;
+			auto& tt1 = triangles[tt1i];
+			old_t = tt1;
+
+			auto ott1i = edge_triangles[ot1].first == tris.second ? edge_triangles[ot1].second : edge_triangles[ot1].first;
+			rect ott1 = get_rect(triangles[ott1i]);
+			rect ett1 = get_rect(old_t);
+			if (std::get<0>(tt1) == et1) std::get<0>(tt1) = ot1;
+			else if (std::get<1>(tt1) == et1) std::get<1>(tt1) = ot1;
+			else if (std::get<2>(tt1) == et1) std::get<2>(tt1) = ot1;
+			if (edge_triangles[ot1].first == tris.second) {
+				edge_triangles[ot1].first = tt1i;
+			}
+			else {
+				edge_triangles[ot1].second = tt1i;
+			}
+
+			points[e.first] = (weight * points[e.first] + (1.0 - weight) * points[e.second]);
+			fix_triangle_rect(ott0, ott0i);
+			fix_triangle_rect(ott1, ott1i);
+			fix_triangle_rect(ett0, tt0i);
+			fix_triangle_rect(ett1, tt1i);
+
+			std::array<size_t, 3> be;
+			size_t sz = triangles.size() - 1;
 
 			if (tris.first == sz) {
 				triangles.pop_back(); sz--;
@@ -325,25 +355,19 @@ namespace fg {
 			}
 			point_edges[e.first].insert(std::begin(point_edges[e.second]), std::end(point_edges[e.second]));
 			point_edges[e.first].erase(edge);
-			point_edges[e.first].erase(et0);
-			point_edges[e.first].erase(et1);
+			//point_edges[e.first].erase(et0);
+			//point_edges[e.first].erase(et1);
 			// Old points
 			auto pfold = points[e.first];
 			auto psold = points[e.second];
-			points[e.first] = (weight * points[e.first] + (1.0 - weight) * points[e.second]);
-			std::swap(point_edges[e.second], point_edges.back());
+			//points[e.first] = (weight * points[e.first] + (1.0 - weight) * points[e.second]);
+			point_edges[e.second] = std::move(point_edges.back());
 			point_edges.pop_back();
 			sz = point_edges.size();
 			for (auto i{ point_edges[e.second].begin() }; i != point_edges[e.second].end(); i++) {
 				auto& p = edges[*i];
-				if (p.first == sz) {
-					p.first = e.second;
-					//fix_edge_rect(rect{ points[p.second], psold }, *i);
-				}
-				else if (p.second == sz) {
-					p.second = e.second;
-					//fix_edge_rect(rect{ points[p.first], psold }, *i);
-				}
+				if (p.first == sz) { p.first = e.second; }
+				else if (p.second == sz) { p.second = e.second; }
 			}
 
 			//for (auto i{ point_edges[e.first].begin() }; i != point_edges[e.first].end(); i++) {
@@ -356,11 +380,26 @@ namespace fg {
 			//	}
 			//}
 
+			auto fix_point_edges_for_erased = [&](size_t edge_index, size_t old_index) {
+				if (edge_index >= edges.size()) return;
+				if (point_edges.size() > edges[edge_index].first) {
+					point_edges[edges[edge_index].first].erase(old_index);
+					point_edges[edges[edge_index].first].insert(edge_index);
+				}
+				if (point_edges.size() > edges[edge_index].second) {
+					point_edges[edges[edge_index].second].erase(old_index);
+					point_edges[edges[edge_index].second].insert(edge_index);
+				}
+			};
+
 			std::swap(points[e.second], points.back()); points.pop_back();
 
 			sz = edges.size() - 1;
 			be[0] = be[1] = be[2] = Mesh2::NotAnEdge;
 			auto clean_up_last_triangle = [&](EdgeIndex e, size_t siz) {
+				if (edge_triangles[siz].first >= triangles.size()) {
+					return;
+				}
 				auto lt = triangles[edge_triangles[siz].first];
 				if (std::get<0>(lt) == siz) std::get<0>(lt) = e;
 				if (std::get<1>(lt) == siz) std::get<1>(lt) = e;
@@ -372,12 +411,85 @@ namespace fg {
 				if (std::get<2>(lt) == siz) std::get<2>(lt) = e;
 				triangles[edge_triangles[siz].second] = lt;
 			};
+
+			// удаляем ребро, если оно последнее. Если не последнее, то меняем его с последним и удаляем
+			auto del_edge = [&](size_t index) {
+				if (index == sz) {
+					edges.pop_back();
+					edge_triangles.pop_back();
+					sz--;
+				}
+				else {
+					clean_up_last_triangle(index, sz);
+					std::swap(edge_triangles[index], edge_triangles.back());
+					edge_triangles.pop_back();
+					std::swap(edges[index], edges.back());
+					fix_point_edges_for_erased(index, sz);
+					edges.pop_back();
+					sz--;
+					return index >= edges.size() ? NotAnEdge : index;
+				}
+			};
+
+			if (edge < et0) {
+				if (et0 < et1) {
+					// edge et0 et1
+					be[2] = del_edge(et1);
+					if (et1 != et0) be[1] = del_edge(et0);
+					else be[1] = be[2];
+					be[0] = del_edge(edge);
+				}
+				else {
+					if (edge < et1) {
+						// edge et1 et0
+						be[1] = del_edge(et0);
+						if (et1 != et0) be[2] = del_edge(et1);
+						else be[2] = be[1];
+						be[0] = del_edge(edge);
+					}
+					else {
+						// et1 edge et0
+						be[1] = del_edge(et0);
+						be[0] = del_edge(edge);
+						if (et1 != et0) be[2] = del_edge(et1);
+						else be[2] = be[1];
+					}
+				}
+			}
+			else {
+				if (et0 > et1) {
+					// et1 et0 edge
+					be[0] = del_edge(edge);
+					be[1] = del_edge(et0);
+					if (et1 != et0) be[2] = del_edge(et1);
+					else be[2] = be[1];
+				}
+				else {
+					if (edge < et1) {
+						// et0 edge et1
+						be[2] = del_edge(et1);
+						be[0] = del_edge(edge);
+						if (et1 != et0) be[1] = del_edge(et0);
+						else be[1] = be[2];
+					}
+					else {
+						// et0 et1 edge
+						be[0] = del_edge(edge);
+						be[2] = del_edge(et1);
+						if (et1 != et0) be[1] = del_edge(et0);
+						else be[1] = be[2];
+					}
+				}
+
+			}
+/*
 			if (edge == sz) { edges.pop_back(); edge_triangles.pop_back(); sz--; }
 			else {
 				clean_up_last_triangle(edge, sz);
 				std::swap(edge_triangles[edge], edge_triangles.back());
 				edge_triangles.pop_back();
 				std::swap(edges[edge], edges.back());
+				fix_point_edges_for_erased(edge, sz);
 				edges.pop_back(); sz--; be[0] = edge >= edges.size() ? NotAnEdge : edge;
 			}
 			if (et0 == sz) { edges.pop_back(); edge_triangles.pop_back(); sz--; }
@@ -385,16 +497,20 @@ namespace fg {
 				clean_up_last_triangle(et0, sz);
 				std::swap(edge_triangles[et0], edge_triangles.back());
 				edge_triangles.pop_back();
-				std::swap(edges[et0], edges.back()); edges.pop_back(); sz--; be[1] = et0 >= edges.size() ? NotAnEdge : et0;
+				std::swap(edges[et0], edges.back());
+				fix_point_edges_for_erased(et0, sz);
+				edges.pop_back(); sz--; be[1] = et0 >= edges.size() ? NotAnEdge : et0;
 			}
 			if (et1 == sz) { edges.pop_back(); edge_triangles.pop_back(); sz--; }
 			else if (et0 != et1) {
 				clean_up_last_triangle(et1, sz);
 				std::swap(edge_triangles[et1], edge_triangles.back());
 				edge_triangles.pop_back();
-				std::swap(edges[et1], edges.back()); edges.pop_back(); sz--; be[2] = et1 >= edges.size() ? NotAnEdge : et1;
+				std::swap(edges[et1], edges.back());
+				fix_point_edges_for_erased(et1, sz);
+				edges.pop_back(); sz--; be[2] = et1 >= edges.size() ? NotAnEdge : et1;
 			}
-
+*/
 			return be;
 		}
 		inline std::tuple<EdgeIndex, EdgeIndex, EdgeIndex> subdivideEdge(EdgeIndex edge, double weight = 0.5) {
@@ -493,6 +609,12 @@ namespace fg {
 			v0 = edges[std::get<0>(tr)].first;
 			v1 = edges[std::get<0>(tr)].second;
 			v2 = (edges[std::get<1>(tr)].first != v0 && edges[std::get<1>(tr)].first != v1) ? edges[std::get<1>(tr)].first : edges[std::get<1>(tr)].second;
+
+			if (edge_triangles[std::get<0>(tr)].first != t && edge_triangles[std::get<0>(tr)].second != t ||
+				edge_triangles[std::get<1>(tr)].first != t && edge_triangles[std::get<1>(tr)].second != t ||
+				edge_triangles[std::get<2>(tr)].first != t && edge_triangles[std::get<2>(tr)].second != t)
+				throw;
+
 			return std::make_tuple(v0, v1, v2);
 		}
 		inline EdgeIndex edgeIndex(TriangleIndex triangle, size_t v0, size_t v1) const {
@@ -506,6 +628,8 @@ namespace fg {
 			if (edges[e2].first == v1 && edges[e2].second == v0) return e2;
 			return Mesh2::NotAnEdge;
 		}
+
+		// l-координаты: http://dolivanov.ru/sites/default/files/_13.pdf ???
 		inline matrix4x4 lcoords(TriangleIndex triangle) const {
 			matrix4x4 m;
 			size_t e0, e1, e2;
@@ -529,27 +653,35 @@ namespace fg {
 			m.data[3][3] = 1.0;
 			return m;
 		}
-		inline matrix4x4 lcoords_inv(TriangleIndex triangle) const {
+
+		inline matrix4x4 lcoords_inv(TriangleIndex triangle) const
+		{
 			return lcoords(triangle).get_inversed();
 		}
-		inline bool test(TriangleIndex triangle, const vector3& point, vector3& l) const {
+
+		inline bool test(TriangleIndex triangle, const vector3& point, vector3& l) const
+		{
 			l = lcoords_inv(triangle) * point;
 			l.z = 1.0 - l.x - l.y;
 			return !(l.x < -FG_EPS || l.y < -FG_EPS || l.z < -FG_EPS);
 		}
-		inline vector3 cast(const vector3& point, std::tuple<size_t, size_t, size_t>& vertices) const {
+
+		// находит первый треугольник, на который попадает точка point
+		inline vector3 cast(const vector3& point, std::tuple<size_t, size_t, size_t>& vertices) const
+		{
 			vector3 l;
 			static std::vector<TriangleIndex> overlaps;
 			overlaps.resize(0);
 			triangle_lookup->get_overlap(point, overlaps);
-			for (auto i{ overlaps.begin() }; i != overlaps.end(); i++) {
-				if (test(*i, point, l)) {
+			for (auto i{ overlaps.begin() }; i != overlaps.end(); i++)
+				if (test(*i, point, l))
+				{
 					vertices = triangleVertices(*i);
 					return l;
 				}
-			}
 			return std::numeric_limits<double>::infinity();
 		}
+
 		// определяет, в какой элемент геометрии попала точка
 		inline GeometryType cast(const vector3& point, size_t& result) const {
 			vector3 l;
@@ -838,12 +970,16 @@ namespace fg {
 		int intersect(const EllipticSegment& l, EdgeIndex e, std::vector<vector3>& res) {
 			return Intersector<ILine>::intersect_segment(l, points[edges[e].first], points[edges[e].second], res);
 		}
+#ifndef _DEBUG
 	protected:
+#endif
 		std::vector<vector3> points;
 		std::vector<Edge> edges;
 		std::vector<Triangle> triangles;
 
+		// все ребра, которым принадлежит точка
 		std::vector<std::set<EdgeIndex>> point_edges;
+		// все треугольники, которым принадлежит ребро (их может быть всего 2)
 		std::vector<std::pair<TriangleIndex, TriangleIndex>> edge_triangles;
 		using TriangleLookup = lookup_tree<2, TreeTriangleIndex>;
 		using EdgeLookup = lookup_tree<2, EdgeIndex>;
@@ -854,10 +990,11 @@ namespace fg {
 
 		const Triangle EmptyTriangle = std::make_tuple(Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge);
 		inline void remove_triangle_from_tree(TriangleIndex tri) {
-			rect r = rect{ points[edges[std::get<0>(triangles[tri])].first],
-				points[edges[std::get<0>(triangles[tri])].second] }.
-				add_point(points[edges[std::get<1>(triangles[tri])].first]).
-				add_point(points[edges[std::get<1>(triangles[tri])].second]);
+			rect r = get_rect(triangles[tri]);
+			//rect r = rect{ points[edges[std::get<0>(triangles[tri])].first],
+			//	points[edges[std::get<0>(triangles[tri])].second] }.
+			//	add_point(points[edges[std::get<1>(triangles[tri])].first]).
+			//	add_point(points[edges[std::get<1>(triangles[tri])].second]);
 			auto tp = std::make_pair(r, tri);
 			if (tri == triangles.size() - 1) {
 				triangle_lookup->remove_element(tp);
@@ -877,16 +1014,24 @@ namespace fg {
 				add_point(points[edges[std::get<1>(triangles[tri])].second]);
 			triangle_lookup->add_element(std::make_pair(r, tri));
 		}
-		inline void fix_triangle_rect(Triangle old, TriangleIndex tri) {
-			rect ro = rect{ points[edges[std::get<0>(old)].first],
-				points[edges[std::get<0>(old)].second] }.
-				add_point(points[edges[std::get<1>(old)].first]).
-				add_point(points[edges[std::get<1>(old)].second]);
-			rect r = rect{ points[edges[std::get<0>(triangles[tri])].first],
-				points[edges[std::get<0>(triangles[tri])].second] }.
-				add_point(points[edges[std::get<1>(triangles[tri])].first]).
-				add_point(points[edges[std::get<1>(triangles[tri])].second]);
+		inline void fix_triangle_rect(const rect& ro, TriangleIndex tri) {
+			rect r = get_rect(triangles[tri]);
 			triangle_lookup->replace_element_rect(std::make_pair(ro, tri), r);
+		}
+		inline void fix_triangle_rect(Triangle old, TriangleIndex tri) {
+			rect ro = get_rect(old);
+			rect r = get_rect(triangles[tri]);
+			//rect r = rect{ points[edges[std::get<0>(triangles[tri])].first],
+			//	points[edges[std::get<0>(triangles[tri])].second] }.
+			//	add_point(points[edges[std::get<1>(triangles[tri])].first]).
+			//	add_point(points[edges[std::get<1>(triangles[tri])].second]);
+			triangle_lookup->replace_element_rect(std::make_pair(ro, tri), r);
+		}
+		inline rect get_rect(Triangle t) const {
+			return rect{ points[edges[std::get<0>(t)].first],
+				points[edges[std::get<0>(t)].second] }.
+				add_point(points[edges[std::get<1>(t)].first]).
+				add_point(points[edges[std::get<1>(t)].second]);
 		}
 		//inline void remove_edge_from_tree(EdgeIndex e) {
 		//	rect r = rect{ points[edges[e].first],

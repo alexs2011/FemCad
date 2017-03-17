@@ -69,52 +69,53 @@ namespace fg {
 					//	first_start = std::chrono::high_resolution_clock::now();
 					//}
 
-				//while (edges_list.size())
-				for(size_t i = 0U; i<edges_list.size(); i++)
-				{
-					//if (control % 250 == 0) {
-					//	last_end = std::chrono::high_resolution_clock::now();
-					//	time = std::chrono::duration_cast<std::chrono::duration<double>>(last_end - first_start).count();
-					//	file << control << " " << time << std::endl;
-					//}
-					//auto edge = edges_list.end();
-					//edge--;
-					switch (criterion->get(edges_list[i], size))
+				//while (edges_list.size()) {
+					for (size_t i = 0U; i < edges_list.size(); i++)
 					{
-					case CriterionResult::Short:
-						auto r = base.CollapseEdge(edges_list[i]);
-						for (auto j : r) {
-							if (j == Mesh2::NotAnEdge || j > i) continue;
-							edges_list_new.push_back(j);
-						}
-						// [TODO] collapse
-					default:
-					case CriterionResult::Fit:
-						break;
-					case CriterionResult::Long:
-						//control++;
-						static std::vector<size_t> edges;
-						edges.resize(0);
+						//if (control % 250 == 0) {
+						//	last_end = std::chrono::high_resolution_clock::now();
+						//	time = std::chrono::duration_cast<std::chrono::duration<double>>(last_end - first_start).count();
+						//	file << control << " " << time << std::endl;
+						//}
+						//auto edge = edges_list.end();
+						//edge--;
+						switch (criterion->get(edges_list[i], size))
+						{
+							case CriterionResult::Short:
+								auto r = base.CollapseEdge(edges_list[i]);
+								for (auto j : r) {
+									if (j == Mesh2::NotAnEdge || j > i) continue;
+									edges_list_new.push_back(j);
+								}
+								// [TODO] collapse
+						default:
+						case CriterionResult::Fit:
+							break;
+						case CriterionResult::Long:
+							//control++;
+							static std::vector<size_t> edges;
+							edges.resize(0);
 
-						//last_start = std::chrono::high_resolution_clock::now();
-						base.SubdivideEdge(edges_list[i], edges);
-						/*if (control == 0) {
-							first_end = std::chrono::high_resolution_clock::now();
-							control++;
-						}*/
-						for (auto i : edges) {
-							edges_list_new.push_back(i);
+							//last_start = std::chrono::high_resolution_clock::now();
+							base.SubdivideEdge(edges_list[i], edges);
+							/*if (control == 0) {
+								first_end = std::chrono::high_resolution_clock::now();
+								control++;
+							}*/
+							for (auto i : edges) {
+								edges_list_new.push_back(i);
+							}
+							break;
 						}
-						break;
+						//edges_list.erase(edge);
 					}
-					//edges_list.erase(edge);
+					if (edges_list_new.size() == 0) break;
+					std::set<size_t> rep(edges_list_new.begin(), edges_list_new.end());
+					edges_list_new = std::vector<size_t>(rep.begin(), rep.end());
+					edges_list = std::move(edges_list_new);
+					std::cout << "\nProgress: " << edges_list.size() << "        ";
 				}
-				//if (edges_list_new.size() == 0) break;
-				std::set<size_t> rep(edges_list_new.begin(), edges_list_new.end());
-				edges_list_new = std::vector<size_t>(rep.begin(), rep.end());
-				edges_list = std::move(edges_list_new);
-				std::cout << "\nProgress: " << edges_list.size() << "        ";
-			}
+			//}
 			std::cout << std::endl << base.mesh().get_tree_debug_info();
 			std::cout << std::endl << meshes[0]->mesh().get_tree_debug_info();
 			std::cout << std::endl << "Time: " <<

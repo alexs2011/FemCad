@@ -554,6 +554,7 @@ namespace fg {
 		}
 
 		std::array<Mesh2::EdgeIndex, 3> CollapseEdge(const Mesh2::EdgeIndex edge) {
+			
 			for (auto i : _mesh.PointEdges()[_mesh.edge(edge).first]) {
 				auto t = _mesh.triangle(_mesh.edge_triangle(i).first);
 				if (isBoundary(std::get<0>(t))) return NotCollapsed;
@@ -574,8 +575,45 @@ namespace fg {
 				if (isBoundary(std::get<1>(t))) return NotCollapsed;
 				if (isBoundary(std::get<2>(t))) return NotCollapsed;
 			}
+#ifdef _DEBUG
+			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
+				for (auto j : _mesh.PointEdges()[i]) {
+					if (j >= _mesh.edge_triangles.size()) {
+						throw "beda";
+					}
+
+				}
+			}
+			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
+				auto tr = _mesh.triangle(i);
+				if (_mesh.edge_triangles[std::get<0>(tr)].first != i && _mesh.edge_triangles[std::get<0>(tr)].second != i ||
+					_mesh.edge_triangles[std::get<1>(tr)].first != i && _mesh.edge_triangles[std::get<1>(tr)].second != i ||
+					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i)
+					throw;
+			}
+#endif
 			auto w = _mesh.collapseWeight(edge);
-			return _mesh.collapseEdge(edge, w);
+			auto s = _mesh.collapseEdge(edge, w);
+
+#ifdef _DEBUG
+			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
+				for (auto j : _mesh.PointEdges()[i]) {
+					if (j >= _mesh.edge_triangles.size()) {
+						throw "beda";
+					}
+
+				}
+			}
+			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
+				auto tr = _mesh.triangle(i);
+				if (_mesh.edge_triangles[std::get<0>(tr)].first != i && _mesh.edge_triangles[std::get<0>(tr)].second != i ||
+					_mesh.edge_triangles[std::get<1>(tr)].first != i && _mesh.edge_triangles[std::get<1>(tr)].second != i ||
+					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i)
+					throw;
+			}
+#endif
+
+			return s;
 		}
 
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {
