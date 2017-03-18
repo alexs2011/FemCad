@@ -219,6 +219,15 @@ namespace fg {
 			std::tuple<size_t, size_t, size_t> out;
 			// хэндлер элемента геометрии, куда попала добавляемая точка
 			size_t el;
+
+#ifdef _DEBUG
+			auto tree = &_mesh.lookup();
+			std::ofstream file("lookup_tree.txt", std::ofstream::out);
+			size_t initial_nodes_index = 0;
+			_mesh.printLookupTree(file, tree, initial_nodes_index);
+			file.close();
+#endif // _DEBUG
+
 			// определим, в какой тип элемента геометрии попала добавляемая точка и его хэндлер
 			auto res = _mesh.cast(pos, el);
 			//auto res = mesh.insert_point(pos, out, el);

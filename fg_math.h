@@ -923,9 +923,14 @@ namespace fg {
 		}
 	};
 
+	// вроде бы это - квадродерево ???
 	template<int D, class T, int plane = axis::AXIS_X>
 	class FEMCADGEOMSHARED_EXPORT lookup_tree
 	{
+#ifdef _DEBUG
+	public:
+#endif
+		// поддеревья (у них плоскость поиска будет перпендикулярной родительскому)
 		std::array<lookup_tree<D, T, (plane + 1) % D>*, 2> s;
 		std::vector<std::pair<rect, T>> container;
 		size_t Mx, max_depth;
@@ -949,7 +954,7 @@ namespace fg {
 		{
 			s[0] = nullptr;
 			s[1] = nullptr;
-			// мин и макс - координаты вершин ограниивающего пр¤моугольника, в который входит весь примитив
+			// мин и макс - координаты вершин ограниивающего прямоугольника, в который входит весь примитив
 			minimum = min;
 			maximum = max;
 			if (rectangles.size() < Mx || depth <= 0) {
@@ -1117,6 +1122,8 @@ namespace fg {
 			add_element(std::make_pair(newv, element.second));
 		}
 	};
+
+
 
 	// класс, задающий уравнение окружности
 	class FEMCADGEOMSHARED_EXPORT square_curve {

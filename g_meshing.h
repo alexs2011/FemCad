@@ -34,7 +34,8 @@ namespace fg {
 	};
 
 	// Внутренняя сетка. Состоит из вершин, ребер, треугольников. Треугольники состоят из ребер, а ребра из вершин.
-	class FEMCADGEOMSHARED_EXPORT Mesh2 {
+	class FEMCADGEOMSHARED_EXPORT Mesh2 
+	{
 	protected:
 		void build_tree() {
 			std::vector<std::pair<rect, TriangleIndex>> rects(triangles.size());
@@ -982,7 +983,7 @@ namespace fg {
 		// все треугольники, которым принадлежит ребро (их может быть всего 2)
 		std::vector<std::pair<TriangleIndex, TriangleIndex>> edge_triangles;
 		using TriangleLookup = lookup_tree<2, TreeTriangleIndex>;
-		using EdgeLookup = lookup_tree<2, EdgeIndex>;
+		//using EdgeLookup = lookup_tree<2, EdgeIndex>;
 
 		std::unique_ptr<TriangleLookup> triangle_lookup;
 		//std::unique_ptr<EdgeLookup> edge_lookup;
@@ -1064,6 +1065,30 @@ namespace fg {
 		}
 		const std::vector<std::set<EdgeIndex>>& PointEdges() const {
 			return point_edges;
+		}
+
+		template<int D, class T, int plane = axis::AXIS_X>
+		void printLookupTree(std::ofstream &f, const lookup_tree<D, T, plane> *tree, size_t &index, size_t parent = 0)
+		{
+			if (tree == nullptr) {
+				f << "Node: NULL - " << parent << std::endl;
+				f << "	Plane: " << plane << std::endl;
+				return;
+			}
+			// индекс текущего узла
+			index++;
+			size_t old_idx = index;
+			f << "Node: " << old_idx << " - " << parent << std::endl;
+			f << "	Plane: " << plane << std::endl;
+			f << "	Minimum: " << tree->minimum << std::endl;
+			f << "	Maximum : " << tree->maximum << std::endl;
+			f << "	Mx: " << tree->Mx << ", counter: " << tree->counter << std::endl;
+			f << "	Collection: " << std::endl;
+			for (auto elem : tree->container)
+				f << "	rect.Min: " << elem.first.Min() << ", rect.Max: " << elem.first.Max() << ", second: " << elem.second << std::endl;
+			//std::array<lookup_tree<D, T, (plane + 1) % D>*, 2> s;
+			printLookupTree(f, tree->s[0], index, old_idx);
+			printLookupTree(f, tree->s[1], index, old_idx);
 		}
 	};
 
