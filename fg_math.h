@@ -992,7 +992,7 @@ namespace fg {
 			}
 		}
 
-		// находит все элементы дерева, которые пересекаютс¤ с данным пр¤моугольником
+		// находит все элементы дерева, которые пересекаются с данным прямоугольником
 		inline void get_overlap(const rect& r, std::set<T>& output) const
 		{
 			auto c = r.classify_by<plane>(0.5*(maximum[plane] + minimum[plane]));
@@ -1094,11 +1094,13 @@ namespace fg {
 			}
 			double midaxis = 0.5 * (minimum[plane] + maximum[plane]);
 			auto c = element.first.classify_by<plane>(midaxis);
-			bool result = false;
+			bool result = true;
 			if (c <= 0)
-				if (s[0]) result = result || s[0]->remove_element(element);
+				if (s[0]) 
+					result = s[0]->remove_element(element) && result;
 			if (c >= 0)
-				if (s[1]) result = result || s[1]->remove_element(element);
+				if (s[1]) 
+					result = s[1]->remove_element(element) && result;
 			return result;
 		}
 		inline void replace_element(const std::pair<rect, T>& element, T newv) {
@@ -1120,6 +1122,38 @@ namespace fg {
 		inline void replace_element_rect(const std::pair<rect, T>& element, rect newv) {
 			remove_element(element);
 			add_element(std::make_pair(newv, element.second));
+		}
+		inline bool has_element_pred(T e, std::function<bool(T,T)> f) const {
+			if (container.size()) {
+				for (size_t i{}; i < container.size(); ++i) {
+					if (f(container[i].second, e)) {
+						return true;
+					}
+				}
+			}
+			return (s[0] && s[0]->has_element_pred(e,f)) || (s[1] && s[1]->has_element_pred(e,f));
+		}
+
+		friend std::ostream& operator<<(std::ostream& s, const lookup_tree<D, T, plane>& p) {
+			s << "{" << std::endl;
+			s << "\"plane\": \"" << plane << "\"," << std::endl;
+			s << "\"minimum\": \"" << p.minimum << "\"," <<std::endl;
+			s << "\"maximum\" : \"" << p.maximum << "\"," <<std::endl;
+			
+			if (p.container.size()) {
+				s << "\"container\" : [" << std::endl;
+				for (auto elem : p.container)
+					s << "{\"min\": \"" << elem.first.Min() << "\", \"max\": \"" << elem.first.Max() << "\", \"element\": " << elem.second << "}," << std::endl;
+				s << "]," << std::endl;
+			}
+			if (p.s[0]) {
+				s << "\"front\" : "<<*(p.s[0]) << ',';
+			}
+			if (p.s[1]) {
+				s << "\"back\" : " << *(p.s[1]) << ',';
+			}
+			s << "}" << std::endl;
+			return s;
 		}
 	};
 

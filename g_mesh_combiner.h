@@ -54,8 +54,8 @@ namespace fg {
 			//std::chrono::high_resolution_clock::time_point first_end;
 			//std::chrono::high_resolution_clock::time_point last_start;
 			std::chrono::high_resolution_clock::time_point last_end;
-			std::ofstream file;
-			file.open("time.txt");
+			//std::ofstream file;
+			//file.open("time.txt");
 			auto time = std::chrono::high_resolution_clock::now();
 
 			for (;;)
@@ -79,15 +79,17 @@ namespace fg {
 						//}
 						//auto edge = edges_list.end();
 						//edge--;
+						if (edges_list[i] >= base.mesh().edgesCount()) continue;
 						switch (criterion->get(edges_list[i], size))
 						{
 							case CriterionResult::Short:
+								break;
 								auto r = base.CollapseEdge(edges_list[i]);
+								// [TODO] edges_new add
 								for (auto j : r) {
 									if (j == Mesh2::NotAnEdge || j > i) continue;
 									edges_list_new.push_back(j);
 								}
-								// [TODO] collapse
 						default:
 						case CriterionResult::Fit:
 							break;
@@ -109,6 +111,10 @@ namespace fg {
 						}
 						//edges_list.erase(edge);
 					}
+
+					for (size_t i{}; i < base.mesh().edgesCount(); i++)
+						base.Flip(i);
+
 					if (edges_list_new.size() == 0) break;
 					std::set<size_t> rep(edges_list_new.begin(), edges_list_new.end());
 					edges_list_new = std::vector<size_t>(rep.begin(), rep.end());
@@ -116,8 +122,8 @@ namespace fg {
 					std::cout << "\nProgress: " << edges_list.size() << "        ";
 				}
 			//}
-			std::cout << std::endl << base.mesh().get_tree_debug_info();
-			std::cout << std::endl << meshes[0]->mesh().get_tree_debug_info();
+			//std::cout << std::endl << base.mesh().get_tree_debug_info();
+			//std::cout << std::endl << meshes[0]->mesh().get_tree_debug_info();
 			std::cout << std::endl << "Time: " <<
 				std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - time).count();
 

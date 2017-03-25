@@ -124,12 +124,12 @@ namespace fg {
 		Mesh2& operator=(Mesh2&&) = default;
 		inline double collapseWeight(EdgeIndex edge) const {
 			auto t = edge_triangles[edge];
-			auto es = triangles[t.first];
 			EdgeIndex e0, e1, et0, et1;
 			size_t vx, t0, t1;
 			auto tmin = 0.0;
 			auto tmax = 1.0;
 			do {
+				auto es = triangles[t.first];
 				if (std::get<0>(es) == edge) {
 					e0 = std::get<1>(es);
 					e1 = std::get<2>(es);
@@ -181,6 +181,7 @@ namespace fg {
 					auto delta_t = -qp.x * v.y + qp.y * v.x;
 					return delta_t / delta;
 				};
+				// experiment
 				auto tt = gett(edges[edge], edges[et1]);
 				if (!std::isnan(tt)) tmin = std::max(tmin, tt);
 				tt = gett(edges[edge], edges[et0]);
@@ -265,10 +266,7 @@ namespace fg {
 			//remove_edge_from_tree(edge);
 			//remove_edge_from_tree(et0);
 			//if (et0 != et1) remove_edge_from_tree(et1);
-			remove_triangle_from_tree(tris.first);
-			if (tris.first != tris.second) {
-				remove_triangle_from_tree(tris.second);
-			}
+			
 
 			point_edges[edges[et0].first].erase(et0);
 			point_edges[edges[et0].second].erase(et0);
@@ -318,7 +316,8 @@ namespace fg {
 
 			std::array<size_t, 3> be;
 			size_t sz = triangles.size() - 1;
-
+			remove_triangle_from_tree(tris.first);
+			
 			if (tris.first == sz) {
 				triangles.pop_back(); sz--;
 			}
@@ -337,6 +336,9 @@ namespace fg {
 					}
 					triangles.pop_back(); sz--;
 				}
+			}
+			if (tris.first != tris.second) {
+				remove_triangle_from_tree(tris.second);
 			}
 			if (tris.second == sz) {
 				triangles.pop_back(); sz--;
@@ -365,12 +367,13 @@ namespace fg {
 			point_edges[e.second] = std::move(point_edges.back());
 			point_edges.pop_back();
 			sz = point_edges.size();
-			for (auto i{ point_edges[e.second].begin() }; i != point_edges[e.second].end(); i++) {
-				auto& p = edges[*i];
-				if (p.first == sz) { p.first = e.second; }
-				else if (p.second == sz) { p.second = e.second; }
+			if (e.second < sz) {
+				for (auto i{ point_edges[e.second].begin() }; i != point_edges[e.second].end(); i++) {
+					auto& p = edges[*i];
+					if (p.first == sz) { p.first = e.second; }
+					else if (p.second == sz) { p.second = e.second; }
+				}
 			}
-
 			//for (auto i{ point_edges[e.first].begin() }; i != point_edges[e.first].end(); i++) {
 			//	auto& p = edges[*i];
 			//	if (p.first == e.first) {
@@ -430,6 +433,7 @@ namespace fg {
 					sz--;
 					return index >= edges.size() ? NotAnEdge : index;
 				}
+				return NotAnEdge;
 			};
 
 			if (edge < et0) {
@@ -630,6 +634,7 @@ namespace fg {
 			return Mesh2::NotAnEdge;
 		}
 
+
 		// l-координаты: http://dolivanov.ru/sites/default/files/_13.pdf ???
 		inline matrix4x4 lcoords(TriangleIndex triangle) const {
 			matrix4x4 m;
@@ -673,7 +678,9 @@ namespace fg {
 			vector3 l;
 			static std::vector<TriangleIndex> overlaps;
 			overlaps.resize(0);
+			// находим все треугольники, в ограничивающий объект которых попала точка
 			triangle_lookup->get_overlap(point, overlaps);
+			// из всех найденных трегольников выбираем только тот треугольник, в который попала точка
 			for (auto i{ overlaps.begin() }; i != overlaps.end(); i++)
 				if (test(*i, point, l))
 				{
@@ -770,32 +777,32 @@ namespace fg {
 				auto triangle = t1;
 				if (std::get<0>(triangle) == e) {
 					auto edge_t = (edges[std::get<1>(triangle)]);
-					if (edge_t.first == p0) {
+					if (edge_t.first == p1) {
 						fedge1 = std::get<1>(triangle);
 						pn1 = edge_t.second;
 					}
-					else if (edge_t.second == p0) {
+					else if (edge_t.second == p1) {
 						fedge1 = std::get<1>(triangle);
 						pn1 = edge_t.first;
 					}
 					else {
 						fedge1 = std::get<2>(triangle);
-						pn1 = edge_t.first == p1 ? edge_t.second : edge_t.first;
+						pn1 = edge_t.first == p0 ? edge_t.second : edge_t.first;
 					}
 				}
 				else {
 					auto edge_t = (edges[std::get<0>(triangle)]);
-					if (edge_t.first == p0) {
+					if (edge_t.first == p1) {
 						fedge1 = std::get<0>(triangle);
 						pn1 = edge_t.second;
 					}
-					else if (edge_t.second == p0) {
+					else if (edge_t.second == p1) {
 						fedge1 = std::get<0>(triangle);
 						pn1 = edge_t.first;
 					}
 					else {
 						fedge1 = std::get<1>(triangle) == e ? std::get<2>(triangle) : std::get<1>(triangle);
-						pn1 = edge_t.first == p1 ? edge_t.second : edge_t.first;
+						pn1 = edge_t.first == p0 ? edge_t.second : edge_t.first;
 					}
 				}
 			};
@@ -829,7 +836,41 @@ namespace fg {
 
 			fix_triangle_rect(t0, tri.first);
 			fix_triangle_rect(t1, tri.second);
+
+			return e;
 		}
+
+		inline bool flippable(EdgeIndex e, double r = 1.0) const {
+			auto pp0 = points[edges[e].first];
+			auto pp1 = points[edges[e].second];
+			double el = (pp0 - pp1).lengthSq();
+			auto t = edge_triangles[e];
+			size_t i0, i1;
+			auto ed = std::get<0>(triangles[t.first]);
+			if (ed == e) {
+				ed = std::get<1>(triangles[t.first]);
+			}
+			if (edges[ed].first == edges[e].first || edges[ed].first == edges[e].second)
+				i0 = edges[ed].second;
+			else
+				i0 = edges[ed].first;
+			ed = std::get<0>(triangles[t.second]);
+			if (ed == e) {
+				ed = std::get<1>(triangles[t.second]);
+			}
+			if (edges[ed].first == edges[e].first || edges[ed].first == edges[e].second)
+				i1 = edges[ed].second;
+			else
+				i1 = edges[ed].first;
+
+			plane p = plane::byThreePonts(points[i0], points[i1], points[i0] + vector3::Z());
+			if (p.classify(pp0) == -p.classify(pp1)) {
+				double el2 = (points[i0] - points[i1]).lengthSq();
+				return el > el2 * r * r;
+			}
+			return false;
+		}
+
 		/*inline void insert_point(const vector3& point) {
 			std::tuple<size_t, size_t, size_t> _;
 			insert_point(point, _);
@@ -954,7 +995,8 @@ namespace fg {
 			return points[idx];
 		}
 		friend class MeshView2d;
-		bool isLineInsideTriangle(const ILine& l, Mesh2::EdgeIndex le, Mesh2::TriangleIndex tri) {
+		bool isLineInsideTriangle(const ILine& l, Mesh2::EdgeIndex le, Mesh2::TriangleIndex tri)
+		{
 			size_t thirdVertexIndex;
 			auto edge = edges[le];
 			if (std::get<0>(triangles[tri]) == le) {
@@ -970,6 +1012,25 @@ namespace fg {
 		}
 		int intersect(const EllipticSegment& l, EdgeIndex e, std::vector<vector3>& res) {
 			return Intersector<ILine>::intersect_segment(l, points[edges[e].first], points[edges[e].second], res);
+		}
+
+		inline std::array<EdgeIndex, 4> get_quadrangle_edges(EdgeIndex e, std::pair<TriangleIndex, TriangleIndex>& t) {
+			t = edge_triangles[e];
+			if (t.first == t.second) throw;
+			std::array<EdgeIndex, 4> res;
+			size_t i = 0;
+			auto addif = [&i, e, &res](size_t ind) {if (ind != e && ind != res[0] && ind != res[1] && ind != res[2] && ind != res[3]) res[i++] = ind; };
+			auto tri = triangles[t.first];
+			addif(std::get<0>(tri));
+			addif(std::get<1>(tri));
+			addif(std::get<2>(tri));
+
+			tri = triangles[t.second];
+			addif(std::get<0>(tri));
+			addif(std::get<1>(tri));
+			addif(std::get<2>(tri));
+
+			return res;
 		}
 #ifndef _DEBUG
 	protected:
@@ -997,16 +1058,18 @@ namespace fg {
 			//	add_point(points[edges[std::get<1>(triangles[tri])].first]).
 			//	add_point(points[edges[std::get<1>(triangles[tri])].second]);
 			auto tp = std::make_pair(r, tri);
-			if (tri == triangles.size() - 1) {
-				triangle_lookup->remove_element(tp);
-				return;
-			}
-			triangle_lookup->replace_element(tp, triangles.size() - 1);
-			rect rb = rect{ points[edges[std::get<0>(triangles.back())].first],
-				points[edges[std::get<0>(triangles.back())].second] }.
-				add_point(points[edges[std::get<1>(triangles.back())].first]).
-				add_point(points[edges[std::get<1>(triangles.back())].second]);
+			//if (tri == triangles.size() - 1) {
+			triangle_lookup->remove_element(tp);
+				//return;
+			//}
+			//triangle_lookup->replace_element(tp, triangles.size() - 1);
+			rect rb = get_rect(triangles.back());
+			//rect rb = rect{ points[edges[std::get<0>(triangles.back())].first],
+			//	points[edges[std::get<0>(triangles.back())].second] }.
+			//	add_point(points[edges[std::get<1>(triangles.back())].first]).
+			//	add_point(points[edges[std::get<1>(triangles.back())].second]);
 			triangle_lookup->remove_element(std::make_pair(rb, triangles.size() - 1));
+			triangle_lookup->add_element(std::make_pair(rb, tri));
 		}
 		inline void add_triangle_to_tree(TriangleIndex tri) {
 			rect r = rect{ points[edges[std::get<0>(triangles[tri])].first],
@@ -1070,25 +1133,26 @@ namespace fg {
 		template<int D, class T, int plane = axis::AXIS_X>
 		void printLookupTree(std::ofstream &f, const lookup_tree<D, T, plane> *tree, size_t &index, size_t parent = 0)
 		{
-			if (tree == nullptr) {
-				f << "Node: NULL - " << parent << std::endl;
-				f << "	Plane: " << plane << std::endl;
-				return;
-			}
-			// индекс текущего узла
-			index++;
-			size_t old_idx = index;
-			f << "Node: " << old_idx << " - " << parent << std::endl;
-			f << "	Plane: " << plane << std::endl;
-			f << "	Minimum: " << tree->minimum << std::endl;
-			f << "	Maximum : " << tree->maximum << std::endl;
-			f << "	Mx: " << tree->Mx << ", counter: " << tree->counter << std::endl;
-			f << "	Collection: " << std::endl;
-			for (auto elem : tree->container)
-				f << "	rect.Min: " << elem.first.Min() << ", rect.Max: " << elem.first.Max() << ", second: " << elem.second << std::endl;
-			//std::array<lookup_tree<D, T, (plane + 1) % D>*, 2> s;
-			printLookupTree(f, tree->s[0], index, old_idx);
-			printLookupTree(f, tree->s[1], index, old_idx);
+			f << "v = "<<*tree;
+			//if (tree == nullptr) {
+			//	f << "Node: NULL - " << parent << std::endl;
+			//	f << "	Plane: " << plane << std::endl;
+			//	return;
+			//}
+			//// индекс текущего узла
+			//index++;
+			//size_t old_idx = index;
+			//f << "Node: " << old_idx << " - " << parent << std::endl;
+			//f << "	Plane: " << plane << std::endl;
+			//f << "	Minimum: " << tree->minimum << std::endl;
+			//f << "	Maximum : " << tree->maximum << std::endl;
+			//f << "	Mx: " << tree->Mx << ", counter: " << tree->counter << std::endl;
+			//f << "	Collection: " << std::endl;
+			//for (auto elem : tree->container)
+			//	f << "	rect.Min: " << elem.first.Min() << ", rect.Max: " << elem.first.Max() << ", second: " << elem.second << std::endl;
+			////std::array<lookup_tree<D, T, (plane + 1) % D>*, 2> s;
+			//printLookupTree(f, tree->s[0], index, old_idx);
+			//printLookupTree(f, tree->s[1], index, old_idx);
 		}
 	};
 

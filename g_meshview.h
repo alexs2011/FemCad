@@ -215,6 +215,7 @@ namespace fg {
 				}
 			}
 		}
+
 		void _addPoint(const vector3& pos, std::vector<Mesh2::EdgeIndex>* added_edges = nullptr) {
 			std::tuple<size_t, size_t, size_t> out;
 			// хэндлер элемента геометрии, куда попала добавляемая точка
@@ -222,7 +223,7 @@ namespace fg {
 
 #ifdef _DEBUG
 			auto tree = &_mesh.lookup();
-			std::ofstream file("lookup_tree.txt", std::ofstream::out);
+			std::ofstream file("lookup_tree.js", std::ofstream::out);
 			size_t initial_nodes_index = 0;
 			_mesh.printLookupTree(file, tree, initial_nodes_index);
 			file.close();
@@ -467,9 +468,8 @@ namespace fg {
 				boxes.push_back(line.line.getBoundingRect());
 			}
 			// Поиск треугольников пересекающихся с ограничивающими объемами
-			for (size_t i{}; i < boxes.size(); ++i) {
+			for (size_t i{}; i < boxes.size(); ++i)
 				_mesh.lookup().get_overlap(boxes[i], triangles_set);
-			}
 
 			// Формирование списка ребер сетки потенциально пересекающихся с добавляемым сегментом
 			for (auto i : triangles_set) {
@@ -525,9 +525,36 @@ namespace fg {
 			geometry.push_back(mline);
 			return;
 		}
-		// OBSOLETE
-		void Flip(const Mesh2::EdgeIndex edge) {
-
+		
+		void Flip(const Mesh2::EdgeIndex edge, double r = 1.0) {
+			if (isBoundary(edge))
+				return;
+			try {
+				std::pair<size_t, size_t> t;
+				auto edges = _mesh.get_quadrangle_edges(edge, t);
+				for (size_t i{}; i < edges.size(); ++i) {
+					auto ti = (i < 2) ? t.first : t.second;
+					auto ei = edges[i];
+					if (isBoundary(ei)) {
+						for (auto j : _edgeGeometry[ei]) {
+							try {
+								auto& es = dynamic_cast<const EllipticSegment&>(geometry[j].line);
+								if (_mesh.isLineInsideTriangle(es, ei, ti))
+									return;
+							}
+							catch (...) {}
+						}
+					}
+				}
+			}
+			catch (...) {
+				return;
+			}
+			_DebugTest();
+			if (_mesh.flippable(edge, r)) {
+				_mesh.flip(edge);
+			}
+			_DebugTest();
 		}
 		// w = 0 -> edges[edge].first
 		// w = 1 -> edges[edge].second
@@ -560,6 +587,46 @@ namespace fg {
 			AddPoint(pp, &edges);
 			if (edges.size())
 				result_edges.insert(result_edges.end(), edges.begin(), edges.end());
+		}
+
+		bool _DebugTest() {
+#ifdef _DEBUG
+			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
+				for (auto j : _mesh.PointEdges()[i]) {
+					if (j >= _mesh.edge_triangles.size()) {
+						assert(false);
+					}
+
+				}
+			}
+			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
+				auto tr = _mesh.triangle(i);
+				if (_mesh.edge_triangles[std::get<0>(tr)].first != i && _mesh.edge_triangles[std::get<0>(tr)].second != i ||
+					_mesh.edge_triangles[std::get<1>(tr)].first != i && _mesh.edge_triangles[std::get<1>(tr)].second != i ||
+					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i)
+					assert(false);
+			}
+			if (_mesh.triangle_lookup->has_element_pred(_mesh.TrianglesLength(), [](size_t l, size_t r) {return l >= r; })) {
+				assert(false);
+			}
+			for (size_t i{}; i < _mesh.edges.size(); ++i) {
+				if (_mesh.edges[i].first == _mesh.edges[i].second) {
+					assert(false);
+				}
+			}
+#ifdef pretest
+			for (size_t i{}; i < _mesh.points.size(); ++i) {
+				for (size_t j{}; j < _mesh.triangles.size(); ++j) {
+					vector3 l;
+					_mesh.test(j, _mesh.point(i), l);
+					if (l.x > FG_EPS && l.y > FG_EPS && l.z > FG_EPS) {
+						assert(false);
+					}
+				}
+			}
+#endif
+#endif
+			return false;
 		}
 
 		std::array<Mesh2::EdgeIndex, 3> CollapseEdge(const Mesh2::EdgeIndex edge) {
@@ -600,11 +667,51 @@ namespace fg {
 					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i)
 					throw;
 			}
+			if (_mesh.triangle_lookup->has_element_pred(_mesh.TrianglesLength(), [](size_t l, size_t r) {return l >= r; })) {
+				throw;
+			}
+			for (size_t i{}; i < _mesh.edges.size(); ++i) {
+				if (_mesh.edges[i].first == _mesh.edges[i].second) {
+					throw;
+				}
+			}
+#ifdef pretest
+			for (size_t i{}; i < _mesh.points.size(); ++i) {
+				for (size_t j{}; j < _mesh.triangles.size(); ++j) {
+					vector3 l;
+					_mesh.test(j, _mesh.point(i), l);
+					if (l.x > FG_EPS && l.y > FG_EPS && l.z > FG_EPS) {
+						throw;
+					}
+				}
+			}
+#endif
 #endif
 			auto w = _mesh.collapseWeight(edge);
+			//if (w != 0.5) return{Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
 			auto s = _mesh.collapseEdge(edge, w);
 
 #ifdef _DEBUG
+
+#ifdef pretest
+			for (size_t i{}; i < _mesh.points.size(); ++i) {
+				for (size_t j{}; j < _mesh.triangles.size(); ++j) {
+					vector3 l;
+					_mesh.test(j, _mesh.point(i), l);
+					if (l.x > FG_EPS && l.y > FG_EPS && l.z > FG_EPS) {
+						throw;
+					}
+				}
+			}
+#endif
+			for (size_t i{}; i < _mesh.edges.size(); ++i) {
+				if (_mesh.edges[i].first == _mesh.edges[i].second) {
+					throw;
+				}
+			}
+			if (_mesh.triangle_lookup->has_element_pred(_mesh.TrianglesLength(), [](size_t l, size_t r) {return l >= r; })) {
+				throw;
+			}
 			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
 				for (auto j : _mesh.PointEdges()[i]) {
 					if (j >= _mesh.edge_triangles.size()) {

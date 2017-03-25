@@ -24,6 +24,7 @@
 #include <functional>
 #include <fstream>
 #include <iostream>
+#include <ostream>
 #include <map>
 #include <math.h>
 #include <memory>

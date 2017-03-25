@@ -13,6 +13,20 @@ namespace fg {
 	};
 
 	template<class S>
+	class LambdaElementSize : public IElementSize<S>
+	{
+		std::function<S(const vector3&)> _func;
+	public:
+		LambdaElementSize() = delete;
+		LambdaElementSize(std::function<S(const vector3&)> f) : _func{ f }, IElementSize<S>(){};
+		LambdaElementSize(const LambdaElementSize&) = default;
+		virtual S get_size(const vector3& point) const {
+			return _func(point);
+		}
+		//virtual vector3 get_size_aniso(const vector3& point) const = 0;
+	};
+
+	template<class S>
 	class MeshElementSize : public IElementSize<S>
 	{
 	protected:

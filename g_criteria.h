@@ -26,8 +26,13 @@ namespace fg {
 			auto size = s.get_size(base.sample_edge(edge, 0.5));
 			double l = base.edge_length(edge);
 			// относительная погрешность
-			double error = (l - size)/size;	
-			return (error > 1e-2) ? CriterionResult::Long : ((error < -0.25) ? CriterionResult::Short : CriterionResult::Fit);
+			if (size > 1e38) return CriterionResult::Fit;
+			double error = (l / size - 1.0);
+			return (error > 1e-2) ? 
+				CriterionResult::Long : 
+				((error < -0.6) ? 
+					CriterionResult::Short : 
+					CriterionResult::Fit);
 		}
 		virtual CriterionResult get(Mesh2::EdgeIndex, const IElementSize<vector3>&) override {
 			// [TODO] vector criterion
@@ -36,6 +41,7 @@ namespace fg {
 		virtual double get_error(Mesh2::EdgeIndex edge, const IElementSize<double>& s) {
 			auto size = s.get_size(base.sample_edge(edge, 0.5));
 			register double l = base.edge_length(edge);
+			if (size > 1e38) return 0.0;
 			return (l - size) / size;
 		}
 		virtual double get_error(Mesh2::EdgeIndex, const IElementSize<vector3>&) {
