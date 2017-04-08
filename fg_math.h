@@ -167,6 +167,18 @@ namespace fg {
 		static vector3 Z() {
 			return vector3(0.0, 0.0, 1.0);
 		}
+		static vector3 Nan() {
+			return vector3(std::nan(""), std::nan(""), std::nan(""));
+		}
+		static vector3 Inf() {
+			return vector3(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+		}
+		inline bool isNan() const {
+			return std::isnan(x) || std::isnan(y) || std::isnan(z);
+		}
+		inline bool isInf() const {
+			return std::isinf(x) || std::isinf(y) || std::isinf(z);
+		}
 	};
 
 	class FEMCADGEOMSHARED_EXPORT quaternion {
@@ -681,6 +693,8 @@ namespace fg {
 		}
 	};
 
+	vector3 segmentIntersection(const vector3& l0p0, const vector3& l0p1, const vector3& l1p0, const vector3& l1p1);
+
 	class FEMCADGEOMSHARED_EXPORT polynome {
 	public:
 		std::vector<double> coef;
@@ -727,7 +741,8 @@ namespace fg {
 			if (coef.size() == 3) {
 				v = false;
 				double D = coef[1] * coef[1] - 4.0 * coef[0] * coef[2];
-				if (std::fabs(D) < 1e-15) {
+				double eps = std::fabs(2.0e-11*std::max(coef[0], std::max(coef[1], coef[2]))*(coef[1] - 2 * (coef[0] + coef[2])));
+				if (std::fabs(D) < eps) {
 					roots.push_back(-coef[1] / coef[2] * 0.5);
 					return;
 				}

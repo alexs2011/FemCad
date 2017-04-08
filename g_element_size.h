@@ -47,6 +47,7 @@ namespace fg {
 			return get_size(point);
 		}
 
+		// вычисляется размер элемента в точке point
 		// возвращает скалярное произведение l-координат треугольника на длину максимального ребра треугольника
 		double get_size(const vector3& point) const override
 		{

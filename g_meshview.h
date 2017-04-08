@@ -10,7 +10,7 @@ namespace fg {
 		virtual const Mesh2& mesh() const = 0;
 		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const = 0;
 	};
-	class RectMeshView : public virtual IMeshView{
+	class RectMeshView : public virtual IMeshView {
 		const RectView& rect;
 		Mesh2 _mesh;
 		std::vector<MeshedLine> _boundary;
@@ -318,7 +318,9 @@ namespace fg {
 				// вернулись индексы ребер тр-ка, в который попала добавляемая точка
 				auto edges = _mesh.triangle(el);
 				// добавим точку в тр-к и вернем индексы трех добавленых ребер в out
+				_DebugTest();
 				auto res = _mesh.insert_point(pos, out, el);
+				_DebugTest();
 
 				// вытащим ребра из out
 				auto eo = std::get<0>(out);
@@ -360,7 +362,11 @@ namespace fg {
 				add(std::get<1>(edges), tri0);
 				add(std::get<2>(edges), tri0);
 
+				_DebugTest();
 				auto res = _mesh.insert_point(pos, out, el);
+				_DebugTest();
+
+					
 				if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 				if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
 				if (std::get<2>(out) >= _edgeGeometry.size() && std::get<2>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
@@ -382,7 +388,9 @@ namespace fg {
 					add(std::get<1>(edges), tri1);
 					add(std::get<2>(edges), tri1);
 
+					_DebugTest();
 					auto res = _mesh.insert_point(pos, out, el);
+					_DebugTest();
 					if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 					if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
 					if (std::get<2>(out) >= _edgeGeometry.size() && std::get<2>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
@@ -406,7 +414,7 @@ namespace fg {
 				added_edges->insert(added_edges->end(), edges.begin(), edges.end());
 			}
 			if (edges.size() && intersectBoundary(pos, geom)) {
-				for (size_t i = 0; i < geom.size(); i++){
+				for (size_t i = 0; i < geom.size(); i++) {
 					update_line(geom[i], pos, edges);
 				}
 			}
@@ -428,6 +436,7 @@ namespace fg {
 			triangles_set.clear();
 			geoms.resize(0);
 			// для всех линий геометрии базовой сетки
+			_DebugTest();
 			for (size_t i{}; i < geometry.size(); i++) {
 				// ищем пересечение линии геометрии базовой сетки и добавляемой линии
 				Intersector<ILine>::intersect_dynamic(int0, int1, line.line, geometry[i].line);
@@ -441,8 +450,9 @@ namespace fg {
 					}
 				}
 			}
-			
+
 			// для всех точек пересечения ???
+			_DebugTest();
 			for (size_t i{}; i < int_common.size(); i++) {
 				//edges.resize(0);
 				// добавили точку пересечения в базовую сетку
@@ -453,6 +463,7 @@ namespace fg {
 			// добавили вершины начала и конца добавляемой линии в базовую сетку
 			AddPoint(line.p0());
 			AddPoint(line.p1());
+			_DebugTest();
 
 			// формирование ограничивающих объемов подсегментов добавляемого сегмента
 			static std::vector<rect> boxes;
@@ -482,6 +493,8 @@ namespace fg {
 			edges.insert(edges.end(), edges_set.begin(), edges_set.end());
 			size_t sz = geometry.size();
 			geoms.clear();
+			_DebugTest();
+
 			for (size_t i{}; i < edges.size(); ++i) {
 				int_common.resize(0);
 				auto e = _mesh.edge(edges[i]);
@@ -500,13 +513,13 @@ namespace fg {
 				case 2:
 					if (int_common[0] == v0 && int_common[1] == v1 ||
 						int_common[0] == v1 && int_common[1] == v0) {
-					
+
 						double t0 = line.line.getParam(v0);
 						double t1 = line.line.getParam(v1);
 						mline.force_add(std::min(t0, t1), edges[i]);
 						geoms.push_back(edges[i]);
 						//_edgeGeometry[].push_back(sz);
-					
+
 						continue;
 					}
 					AddPoint(int_common[0], &edges);
@@ -514,7 +527,8 @@ namespace fg {
 					break;
 				}
 			}
-			
+
+			_DebugTest();
 			for (auto i : geoms) {
 				if (mline.get(mline.pos[i]) != i) {
 					mline.pos.erase(i);
@@ -522,10 +536,11 @@ namespace fg {
 				}
 				_edgeGeometry[i].push_back(sz);
 			}
+			_DebugTest();
 			geometry.push_back(mline);
 			return;
 		}
-		
+
 		void Flip(const Mesh2::EdgeIndex edge, double r = 1.0) {
 			if (isBoundary(edge))
 				return;
@@ -563,6 +578,7 @@ namespace fg {
 			static std::vector<size_t> edges;
 			edges.resize(0);
 			vector3 pp = _mesh.sample_edge(edge, w);
+			_DebugTest();
 			if (isBoundary(edge)) {
 				for (auto i{ 0U }; i < _edgeGeometry[edge].size(); ++i) {
 					edges.resize(0);
@@ -585,12 +601,34 @@ namespace fg {
 			}
 			edges.resize(0);
 			AddPoint(pp, &edges);
-			if (edges.size())
+			_DebugTest();
+			if (edges.size()) {
 				result_edges.insert(result_edges.end(), edges.begin(), edges.end());
+			}
 		}
-
+		bool _DebugTestIntersection(size_t vx = 0xFFFFFFFF, size_t vt = 0xFFFFFFFF) const {
+			if (vx != 0xFFFFFFFF && vt != 0xFFFFFFFF) {
+				for (auto i : _mesh.point_edges[vx]) {
+					auto e0 = _mesh.edges[i];
+					if ((e0.first == vx && e0.second == vt) || (e0.first == vt && e0.second == vx)) continue;
+					for (auto j : _mesh.point_edges[vt]) {
+						auto e1 = _mesh.edges[j];
+						if (i == j || (e1.first == vx && e1.second == vt) || (e1.first == vt && e1.second == vx)) continue;
+						if ((e1.first == e0.first || e1.second == e0.first) || (e1.first == e0.second || e1.second == e0.second)) continue;
+						auto p = segmentIntersection(_mesh.points[e0.first], _mesh.points[e0.second], _mesh.points[e1.first], _mesh.points[e1.second]);
+						if (p.isInf() || p.isNan()) continue;
+						std::cout << p;
+						return true;
+						//_mesh.
+					}
+				}
+			}
+			return false;
+		}
 		bool _DebugTest() {
-#ifdef _DEBUG
+#ifndef _DEBUG__
+#define _point_edges_test
+#ifdef _point_edges_test
 			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
 				for (auto j : _mesh.PointEdges()[i]) {
 					if (j >= _mesh.edge_triangles.size()) {
@@ -599,38 +637,93 @@ namespace fg {
 
 				}
 			}
+#endif
+//#define _planar_triangles
+#ifdef _planar_triangles
+			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
+				auto pts = _mesh.triangleVertices(i);
+				auto pp0 = _mesh.points[std::get<0>(pts)];
+				auto pp1 = _mesh.points[std::get<1>(pts)];
+				auto pp2 = _mesh.points[std::get<2>(pts)];
+				try {
+					plane::byThreePonts(pp0, pp1, pp2);
+				}
+				catch (...) {
+					std::cout << '"' << i << pp0 << pp1 << pp2 << '"';
+					throw;
+				}
+			}
+#endif
+#define _double_edged_triangles_test
+#ifdef _double_edged_triangles_test
+			std::set<std::pair<size_t, size_t>> p;
+			for (size_t i{}; i < _mesh.edgesCount(); ++i) {
+				auto pp = _mesh.edge_triangle(i);
+				if (pp.first > pp.second)
+					pp.first ^= pp.second ^= pp.first ^= pp.second;
+				if (p.count(pp) && pp.first != pp.second) {
+					std::cout << '+' << i << '+';
+					throw "baaad";
+				}
+				p.insert(pp);
+
+				/*for (size_t j{ i + 1 }; j < _mesh.edgesCount(); ++j) {
+					if ((_mesh.edge_triangle(i).first == _mesh.edge_triangle(j).first &&
+						_mesh.edge_triangle(i).second == _mesh.edge_triangle(j).second) ||
+						(_mesh.edge_triangle(i).first == _mesh.edge_triangle(j).second &&
+							_mesh.edge_triangle(i).second == _mesh.edge_triangle(j).first))
+				}*/
+			}
+#endif
+#define _edge_triangles_test
+#ifdef _edge_triangles_test
 			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
 				auto tr = _mesh.triangle(i);
 				if (_mesh.edge_triangles[std::get<0>(tr)].first != i && _mesh.edge_triangles[std::get<0>(tr)].second != i ||
 					_mesh.edge_triangles[std::get<1>(tr)].first != i && _mesh.edge_triangles[std::get<1>(tr)].second != i ||
-					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i)
-					assert(false);
+					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i) {
+					std::cout << '+' << i;
+
+					throw;
+				}
 			}
+#endif
+#ifdef _lookup_test
 			if (_mesh.triangle_lookup->has_element_pred(_mesh.TrianglesLength(), [](size_t l, size_t r) {return l >= r; })) {
 				assert(false);
 			}
+#endif
+#define _edge_points_test
+#ifdef _edge_points_test
 			for (size_t i{}; i < _mesh.edges.size(); ++i) {
 				if (_mesh.edges[i].first == _mesh.edges[i].second) {
 					assert(false);
 				}
 			}
+#endif
+			//#define pretest
 #ifdef pretest
-			for (size_t i{}; i < _mesh.points.size(); ++i) {
+			for (size_t i{}; i < _mesh.points.size(); ++i) { //i=857, j=1605
 				for (size_t j{}; j < _mesh.triangles.size(); ++j) {
-					vector3 l;
-					_mesh.test(j, _mesh.point(i), l);
-					if (l.x > FG_EPS && l.y > FG_EPS && l.z > FG_EPS) {
-						assert(false);
+					if (i == 857 && j == 1605)
+					{
+						vector3 l;
+						_mesh.test(j, _mesh.point(i), l);
+						if (l.x > FG_EPS && l.y > FG_EPS && l.z > FG_EPS) {
+							std::cout << i << ' ' << j << ' ' << l << std::endl;
+							throw "Ne Tak";
+						}
 					}
 				}
 			}
 #endif
+
 #endif
 			return false;
 		}
 
 		std::array<Mesh2::EdgeIndex, 3> CollapseEdge(const Mesh2::EdgeIndex edge) {
-			
+
 			for (auto i : _mesh.PointEdges()[_mesh.edge(edge).first]) {
 				auto t = _mesh.triangle(_mesh.edge_triangle(i).first);
 				if (isBoundary(std::get<0>(t))) return NotCollapsed;
@@ -651,84 +744,28 @@ namespace fg {
 				if (isBoundary(std::get<1>(t))) return NotCollapsed;
 				if (isBoundary(std::get<2>(t))) return NotCollapsed;
 			}
-#ifdef _DEBUG
-			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
-				for (auto j : _mesh.PointEdges()[i]) {
-					if (j >= _mesh.edge_triangles.size()) {
-						throw "beda";
-					}
+			//_DebugTest();
+			auto ep0 = _mesh.edges[edge].first;
+			auto ets = _mesh.oppositeVertices(edge);
 
-				}
-			}
-			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
-				auto tr = _mesh.triangle(i);
-				if (_mesh.edge_triangles[std::get<0>(tr)].first != i && _mesh.edge_triangles[std::get<0>(tr)].second != i ||
-					_mesh.edge_triangles[std::get<1>(tr)].first != i && _mesh.edge_triangles[std::get<1>(tr)].second != i ||
-					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i)
-					throw;
-			}
-			if (_mesh.triangle_lookup->has_element_pred(_mesh.TrianglesLength(), [](size_t l, size_t r) {return l >= r; })) {
-				throw;
-			}
-			for (size_t i{}; i < _mesh.edges.size(); ++i) {
-				if (_mesh.edges[i].first == _mesh.edges[i].second) {
-					throw;
-				}
-			}
-#ifdef pretest
-			for (size_t i{}; i < _mesh.points.size(); ++i) {
-				for (size_t j{}; j < _mesh.triangles.size(); ++j) {
-					vector3 l;
-					_mesh.test(j, _mesh.point(i), l);
-					if (l.x > FG_EPS && l.y > FG_EPS && l.z > FG_EPS) {
-						throw;
-					}
-				}
-			}
-#endif
-#endif
+			//if (_DebugTestIntersection(ep0, ets.first) || (ets.first != ets.second && _DebugTestIntersection(ep0, ets.second))) {
+			//	throw "Sovsem beda";
+			//}
 			auto w = _mesh.collapseWeight(edge);
 			//if (w != 0.5) return{Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
+			//if(std::isnan(w)) return{ Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
+			_DebugTest();
 			auto s = _mesh.collapseEdge(edge, w);
+			for (auto i : s) {
+				if (i == Mesh2::NotAnEdge) continue;
+				_edgeGeometry[i] = std::move(_edgeGeometry.back());
+				_edgeGeometry.pop_back();
+			}
+			_DebugTest();
 
-#ifdef _DEBUG
-
-#ifdef pretest
-			for (size_t i{}; i < _mesh.points.size(); ++i) {
-				for (size_t j{}; j < _mesh.triangles.size(); ++j) {
-					vector3 l;
-					_mesh.test(j, _mesh.point(i), l);
-					if (l.x > FG_EPS && l.y > FG_EPS && l.z > FG_EPS) {
-						throw;
-					}
-				}
-			}
-#endif
-			for (size_t i{}; i < _mesh.edges.size(); ++i) {
-				if (_mesh.edges[i].first == _mesh.edges[i].second) {
-					throw;
-				}
-			}
-			if (_mesh.triangle_lookup->has_element_pred(_mesh.TrianglesLength(), [](size_t l, size_t r) {return l >= r; })) {
-				throw;
-			}
-			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
-				for (auto j : _mesh.PointEdges()[i]) {
-					if (j >= _mesh.edge_triangles.size()) {
-						throw "beda";
-					}
-
-				}
-			}
-			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
-				auto tr = _mesh.triangle(i);
-				if (_mesh.edge_triangles[std::get<0>(tr)].first != i && _mesh.edge_triangles[std::get<0>(tr)].second != i ||
-					_mesh.edge_triangles[std::get<1>(tr)].first != i && _mesh.edge_triangles[std::get<1>(tr)].second != i ||
-					_mesh.edge_triangles[std::get<2>(tr)].first != i && _mesh.edge_triangles[std::get<2>(tr)].second != i)
-					throw;
-			}
-#endif
-
+			//if (_DebugTestIntersection(ep0, ets.first) || (ets.first != ets.second && _DebugTestIntersection(ep0, ets.second))) {
+			//	throw "Ne Sovsem beda";
+			//}
 			return s;
 		}
 

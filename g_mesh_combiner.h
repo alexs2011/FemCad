@@ -57,19 +57,19 @@ namespace fg {
 			//std::ofstream file;
 			//file.open("time.txt");
 			auto time = std::chrono::high_resolution_clock::now();
+			try {
+				for (;;)
+				{
+					//for (; control < 5; control++) {
+		//#ifdef _DEBUG
+						//std::cout << edges_list.size() << std::endl;
+						//std::cout << base.mesh().edgesCount() << std::endl;
+		//#endif
+						//if (control == 0) {
+						//	first_start = std::chrono::high_resolution_clock::now();
+						//}
 
-			for (;;)
-			{
-				//for (; control < 5; control++) {
-	//#ifdef _DEBUG
-					//std::cout << edges_list.size() << std::endl;
-					//std::cout << base.mesh().edgesCount() << std::endl;
-	//#endif
-					//if (control == 0) {
-					//	first_start = std::chrono::high_resolution_clock::now();
-					//}
-
-				//while (edges_list.size()) {
+					//while (edges_list.size()) {
 					for (size_t i = 0U; i < edges_list.size(); i++)
 					{
 						//if (control % 250 == 0) {
@@ -82,18 +82,19 @@ namespace fg {
 						if (edges_list[i] >= base.mesh().edgesCount()) continue;
 						switch (criterion->get(edges_list[i], size))
 						{
-							case CriterionResult::Short:
-								break;
-								auto r = base.CollapseEdge(edges_list[i]);
-								// [TODO] edges_new add
-								for (auto j : r) {
-									if (j == Mesh2::NotAnEdge || j > i) continue;
-									edges_list_new.push_back(j);
-								}
+						case CriterionResult::Short:
+							//break;
+							auto r = base.CollapseEdge(edges_list[i]);
+							// [TODO] edges_new add
+							for (auto j : r) {
+								if (j == Mesh2::NotAnEdge || j > i) continue;
+								edges_list_new.push_back(j);
+							}
 						default:
 						case CriterionResult::Fit:
 							break;
 						case CriterionResult::Long:
+							break;
 							//control++;
 							static std::vector<size_t> edges;
 							edges.resize(0);
@@ -112,8 +113,8 @@ namespace fg {
 						//edges_list.erase(edge);
 					}
 
-					for (size_t i{}; i < base.mesh().edgesCount(); i++)
-						base.Flip(i);
+					//for (size_t i{}; i < base.mesh().edgesCount(); i++)
+					//	base.Flip(i);
 
 					if (edges_list_new.size() == 0) break;
 					std::set<size_t> rep(edges_list_new.begin(), edges_list_new.end());
@@ -121,7 +122,13 @@ namespace fg {
 					edges_list = std::move(edges_list_new);
 					std::cout << "\nProgress: " << edges_list.size() << "        ";
 				}
-			//}
+				//}
+			}catch(const char* s){
+				std::cout << s << std::endl;
+			}
+			catch(...){
+				std::cout << "Exceptions!!!";
+			}
 			//std::cout << std::endl << base.mesh().get_tree_debug_info();
 			//std::cout << std::endl << meshes[0]->mesh().get_tree_debug_info();
 			std::cout << std::endl << "Time: " <<

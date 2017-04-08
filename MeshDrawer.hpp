@@ -12,8 +12,8 @@ class MeshDrawer : public Drawer
 {
 private:
 	std::vector<const fg::IMeshView *> mesh_views;
-
 public:
+	std::function<void()> onClick;
 	MeshDrawer() = default;
 	void init() {
 		this->Drawer::init(display);
