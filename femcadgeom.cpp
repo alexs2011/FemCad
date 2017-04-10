@@ -118,13 +118,14 @@ void FemCadGeomTester::Launch()
 	combiner.AdjustMesh(size);
 	//combiner.AddIntersectingMesh(mesh_form0);
 
+	//combiner.AdjustMeshInitialization(size);
+	//onSpacePress = ([&]()->void { if (!combiner.AdjustIteration(size)) std::cout << "Mesh optimization complete" << std::endl; });
 
 	globalMeshDrawer.draw(combiner);
 	//globalMeshDrawer.draw(*mesh_base);
 	//globalMeshDrawer.draw(*rsh);
 
 	globalMeshDrawer.init();
-	//globalMeshDrawer.onClick = ([&]()->void {combiner.AdjustIteration(); });
 #else
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting());
@@ -158,7 +159,7 @@ void FemCadGeomTester::Launch()
 	GHANDLE v11 = Vertex(s, vs, { 1.9,0. ,0 }).getHandle();
 	GHANDLE v12 = Vertex(s, vs, { 2,1,0 }).getHandle();
 	GHANDLE v13 = Vertex(s, vs, { 1,1,0 }).getHandle();
-	
+
 	GHANDLE l10 = LineSegment(s, ls_1, v10, v11).getHandle();
 	GHANDLE l11 = LineSegment(s, ls_1, v11, v12).getHandle();
 	GHANDLE l12 = LineSegment(s, ls_1, v12, v13).getHandle();

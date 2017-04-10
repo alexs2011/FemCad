@@ -3,13 +3,21 @@
 #include "g_line_ext.h"
 
 namespace fg {
-	class IMeshView {
+	class IMeshView
+	{
+	public:
+		size_t dbg_edge_to_be_processed = -1; // индекс ребра, которое будет обработано следующим
 	public:
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const = 0;
 		virtual const size_t boundary_size() const = 0;
 		virtual const Mesh2& mesh() const = 0;
 		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const = 0;
+		bool isToBeProcessed(Mesh2::EdgeIndex i) const
+		{
+			return i == dbg_edge_to_be_processed;
+		}
 	};
+
 	class RectMeshView : public virtual IMeshView {
 		const RectView& rect;
 		Mesh2 _mesh;
@@ -616,8 +624,9 @@ namespace fg {
 						if (i == j || (e1.first == vx && e1.second == vt) || (e1.first == vt && e1.second == vx)) continue;
 						if ((e1.first == e0.first || e1.second == e0.first) || (e1.first == e0.second || e1.second == e0.second)) continue;
 						auto p = segmentIntersection(_mesh.points[e0.first], _mesh.points[e0.second], _mesh.points[e1.first], _mesh.points[e1.second]);
-						if (p.isInf() || p.isNan()) continue;
-						std::cout << p;
+						if (p.isInf() || p.isNan())
+							continue;
+						std::cout << "Intersection found: " << p <<std::endl;
 						return true;
 						//_mesh.
 					}
@@ -752,6 +761,9 @@ namespace fg {
 			//	throw "Sovsem beda";
 			//}
 			auto w = _mesh.collapseWeight(edge);
+			std::cout << _mesh.point(_mesh.edge(edge).first) << _mesh.point(_mesh.edge(edge).second) << std::endl;
+			std::cout << "w= " << w << std::endl;
+
 			//if (w != 0.5) return{Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
 			//if(std::isnan(w)) return{ Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
 			_DebugTest();
@@ -763,9 +775,9 @@ namespace fg {
 			}
 			_DebugTest();
 
-			//if (_DebugTestIntersection(ep0, ets.first) || (ets.first != ets.second && _DebugTestIntersection(ep0, ets.second))) {
-			//	throw "Ne Sovsem beda";
-			//}
+			if (_DebugTestIntersection(ep0, ets.first) || (ets.first != ets.second && _DebugTestIntersection(ep0, ets.second))) {
+				throw "Ne Sovsem beda";
+			}
 			return s;
 		}
 

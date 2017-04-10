@@ -13,7 +13,7 @@ class MeshDrawer : public Drawer
 private:
 	std::vector<const fg::IMeshView *> mesh_views;
 public:
-	std::function<void()> onClick;
+
 	MeshDrawer() = default;
 	void init() {
 		this->Drawer::init(display);
@@ -36,7 +36,7 @@ public:
 static MeshDrawer globalMeshDrawer;
 
 void display(void)
-{	
+{
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_POINT_SMOOTH);
 	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
@@ -62,13 +62,19 @@ void display(void)
 	//double xMax = 0.0, xMin = 0.0, yMax = 0.0, yMin = 0.0;
 	for (auto meshview : meshes) {
 		const auto& _mesh = meshview->mesh();
-		for (size_t i = 0; i < _mesh.edgesCount(); ++i) {
-			if (meshview->isBoundary(i)) {
+		for (size_t i = 0; i < _mesh.edgesCount(); ++i)
+		{
+			glLineWidth(1.0);
+			if (meshview->isBoundary(i))
 				glColor3f(1.0f, 0.2f, 0.2f);
-			}
-			else {
+			else
 				glColor3f(0.2f, 0.2f, 0.2f);
+			if (meshview->isToBeProcessed(i))
+			{
+				glLineWidth(10.0);
+				glColor3f(0.0f, 0.0f, 1.0f);
 			}
+			
 			auto e = _mesh.edge(i);
 			auto draw_p = [&](double x, double y, double z) {
 				glVertex3d(x, y, z);
@@ -97,8 +103,8 @@ void display(void)
 	}
 	//glPopMatrix();
 
-	
-	
+
+
 	// определим размеры сцены (т.е. какой прмоугльоник сцены захватывает наша камера)
 	int w = glutGet(GLUT_WINDOW_WIDTH);
 	int h = glutGet(GLUT_WINDOW_HEIGHT);
@@ -111,7 +117,7 @@ void display(void)
 	//glTranslatef(-xChange, -yChange, 0.0f);
 	glBegin(GL_LINES);
 	glColor3d(0.0, 1.0, 0.0);
-	glVertex3d(2*xMin, (0.0), 1.0);
+	glVertex3d(2 * xMin, (0.0), 1.0);
 	glVertex3d(2 * xMax, (0.0), 1.0);
 	glVertex3d(0.0, 2 * yMin, 1.0);
 	glVertex3d(0.0, 2 * yMax, 1.0);

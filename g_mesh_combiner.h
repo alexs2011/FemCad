@@ -4,9 +4,15 @@
 
 namespace fg {
 	class MeshCombiner : public virtual IMeshView {
+	private:
 		MeshView2d base;
 		std::unique_ptr<ICriterion> criterion;
 		std::vector<std::shared_ptr<IMeshView>> meshes;
+		// переменные для AdjustIteration
+		std::vector<size_t> edges_list;
+		std::vector<size_t> edges_list_new;
+		size_t adjustMeshIter;
+		size_t i_flip;
 	public:
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const { return base.boundary(index); }
 		virtual const size_t boundary_size() const { return base.boundary_size(); }
@@ -32,112 +38,133 @@ namespace fg {
 		}
 
 		template<class T>
+		void AdjustMeshInitialization(const IElementSize<T>& size)
+		{
+			adjustMeshIter = 0;
+			i_flip = 0;
+			for (size_t i{}; i < base.mesh().edgesCount(); i++)
+				if (criterion->get(i, size) != CriterionResult::Fit)
+					edges_list.push_back(i);
+		}
+
+		template<class T>
 		void AdjustMesh(const IElementSize<T>& size) {
 			// у каждого ребра есть приоритет. Приоритет тем больше,чем больше ошибка на этом ребре
 			// чтобы ребра не обрабатывались бесконечно, новодобавленные ребра записываются в другой мультимэп
 			// при добавлениив мультмэп, ребра сортируются по приоритету, поэтому наиболее приоритетные обрабатываются первее
-			//std::multimap<double, size_t> edges_list;//(base.mesh().edgesCount());
-			//std::multimap<double, size_t> edges_list_new;//(base.mesh().edgesCount());
-
-			std::vector<size_t> edges_list;
-			std::vector<size_t> edges_list_new;
-			//for (size_t i{}; i < base.mesh().edgesCount(); i++)
-			//	edges_list.insert(std::make_pair(criterion->get_error(i, size), i));
-			for (size_t i{}; i < base.mesh().edgesCount(); i++)
-				if(criterion->get(i, size) != CriterionResult::Fit)
-					edges_list.push_back(i);
-			//size_t index = 0;
-			size_t control = 0;
-
 
 			std::chrono::high_resolution_clock::time_point first_start;
-			//std::chrono::high_resolution_clock::time_point first_end;
-			//std::chrono::high_resolution_clock::time_point last_start;
 			std::chrono::high_resolution_clock::time_point last_end;
-			//std::ofstream file;
-			//file.open("time.txt");
 			auto time = std::chrono::high_resolution_clock::now();
+
+			AdjustMeshInitialization(size);
 			try {
-				for (;;)
+				bool flag = true;
+				while (flag)
 				{
-					//for (; control < 5; control++) {
-		//#ifdef _DEBUG
-						//std::cout << edges_list.size() << std::endl;
-						//std::cout << base.mesh().edgesCount() << std::endl;
-		//#endif
-						//if (control == 0) {
-						//	first_start = std::chrono::high_resolution_clock::now();
-						//}
-
-					//while (edges_list.size()) {
-					for (size_t i = 0U; i < edges_list.size(); i++)
-					{
-						//if (control % 250 == 0) {
-						//	last_end = std::chrono::high_resolution_clock::now();
-						//	time = std::chrono::duration_cast<std::chrono::duration<double>>(last_end - first_start).count();
-						//	file << control << " " << time << std::endl;
-						//}
-						//auto edge = edges_list.end();
-						//edge--;
-						if (edges_list[i] >= base.mesh().edgesCount()) continue;
-						switch (criterion->get(edges_list[i], size))
-						{
-						case CriterionResult::Short:
-							//break;
-							auto r = base.CollapseEdge(edges_list[i]);
-							// [TODO] edges_new add
-							for (auto j : r) {
-								if (j == Mesh2::NotAnEdge || j > i) continue;
-								edges_list_new.push_back(j);
-							}
-						default:
-						case CriterionResult::Fit:
-							break;
-						case CriterionResult::Long:
-							break;
-							//control++;
-							static std::vector<size_t> edges;
-							edges.resize(0);
-
-							//last_start = std::chrono::high_resolution_clock::now();
-							base.SubdivideEdge(edges_list[i], edges);
-							/*if (control == 0) {
-								first_end = std::chrono::high_resolution_clock::now();
-								control++;
-							}*/
-							for (auto i : edges) {
-								edges_list_new.push_back(i);
-							}
-							break;
-						}
-						//edges_list.erase(edge);
-					}
-
-					//for (size_t i{}; i < base.mesh().edgesCount(); i++)
-					//	base.Flip(i);
-
-					if (edges_list_new.size() == 0) break;
-					std::set<size_t> rep(edges_list_new.begin(), edges_list_new.end());
-					edges_list_new = std::vector<size_t>(rep.begin(), rep.end());
-					edges_list = std::move(edges_list_new);
-					std::cout << "\nProgress: " << edges_list.size() << "        ";
+					flag = AdjustIteration(size);
+					if (adjustMeshIter == edges_list.size() && flag != false)
+						std::cout << "\nProgress: " << edges_list.size() << "        ";
 				}
-				//}
-			}catch(const char* s){
+			}
+			catch (const char* s) {
 				std::cout << s << std::endl;
 			}
-			catch(...){
+			catch (...) {
 				std::cout << "Exceptions!!!";
 			}
-			//std::cout << std::endl << base.mesh().get_tree_debug_info();
-			//std::cout << std::endl << meshes[0]->mesh().get_tree_debug_info();
 			std::cout << std::endl << "Time: " <<
 				std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - time).count();
+		}
 
-			
+		template<class T>
+		inline bool AdjustIteration(const IElementSize<T>& size)
+		{
+			if (adjustMeshIter == edges_list.size())
+			{
+				//for (; i_flip < base.mesh().edgesCount(); i_flip++)
+				//{
+				//	if (i_flip + 1 < base.mesh().edgesCount() && base.mesh().flippable(i_flip + 1))
+				//	{
+				//		this->dbg_edge_to_be_processed = i_flip + 1;
+				//		if(i_flip - 1 >= 0 && base.mesh().flippable(i_flip - 1))
+				//			base.Flip(i_flip - 1);
+				//		i_flip++;
+				//		return true;
+				//	}
+				//	else
+				//		this->dbg_edge_to_be_processed = -1;
+				//	base.Flip(i_flip);
+				//}
 
-			//std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(first_end - first_start).count() << std::endl;
-			//std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(last_end - last_start).count() << std::endl;
+				if (edges_list_new.empty())
+				{
+					this->dbg_edge_to_be_processed = -1;
+					return false;
+				}
+				std::set<size_t> rep(edges_list_new.begin(), edges_list_new.end());
+				edges_list_new = std::vector<size_t>(rep.begin(), rep.end());
+				edges_list = std::move(edges_list_new);
+				adjustMeshIter = 0;
+				i_flip = 0;
+				
+			}
+			if (adjustMeshIter + 1 == edges_list.size())
+			{
+				if (!edges_list_new.empty())
+					this->dbg_edge_to_be_processed = edges_list_new[0];
+				else
+					this->dbg_edge_to_be_processed = -1;
+			}
+			else
+			{
+				this->dbg_edge_to_be_processed = edges_list[adjustMeshIter + 1]; // отладка
+			}
+
+			if (this->dbg_edge_to_be_processed >= base.mesh().edgesCount())
+				this->dbg_edge_to_be_processed = -1;
+			else
+			{
+				auto dbg_edge = base.mesh().edge(this->dbg_edge_to_be_processed);
+				std::cout << this->dbg_edge_to_be_processed << " " << dbg_edge.first << " " << dbg_edge.second << " " << base.mesh().point(dbg_edge.first) << " " << base.mesh().point(dbg_edge.second) << std::endl;
+			}
+
+			if (edges_list[adjustMeshIter] >= base.mesh().edgesCount())
+			{
+				adjustMeshIter++;
+				return true;
+			}
+
+			switch (criterion->get(edges_list[adjustMeshIter], size))
+			{
+			case CriterionResult::Short:
+				//break;
+				auto r = base.CollapseEdge(edges_list[adjustMeshIter]);
+				// [TODO] edges_new add
+				for (auto j : r) {
+					if (j == Mesh2::NotAnEdge || j > adjustMeshIter)
+					{
+						adjustMeshIter++;
+						return true;
+					}
+					edges_list_new.push_back(j);
+				}
+			default:
+			case CriterionResult::Fit:
+				break;
+			case CriterionResult::Long:
+				break;
+				static std::vector<size_t> edges;
+				edges.resize(0);
+				base.SubdivideEdge(edges_list[adjustMeshIter], edges);
+				for (auto i : edges)
+					edges_list_new.push_back(i);
+				break;
+			}
+			//if (this->dbg_edge_to_be_processed != edges_list[adjustMeshIter + 1])
+			//	std::cout << std::endl << "err";
+ 			adjustMeshIter++;
+			return true;
 		}
 
 		void AddIntersectingMesh(std::shared_ptr<IMeshView> _mesh) {

@@ -9,6 +9,8 @@ void processUsualKeys(unsigned char key, int xx, int yy);
 int window_id;
 double xChange = 0.0, yChange = 0.0, scale = 1.0;
 
+std::function<void()> onSpacePress;
+
 class Drawer
 {
 private:
@@ -125,6 +127,9 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 	case 27: // escape key
 		glutDestroyWindow(window_id);
 		exit(0);
+		break;
+	case 32: // space key
+		onSpacePress();
 		break;
 	}
 	set_perspective();

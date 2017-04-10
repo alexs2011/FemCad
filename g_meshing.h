@@ -205,9 +205,9 @@ namespace fg {
 				throw "BEDAAAAA";
 			}
 
-			if (isCorrect() == false) {
-				throw;
-			}
+			//if (isCorrect() == false) {
+			//	throw;
+			//}
 			auto e = edges[edge];
 			auto tris = edge_triangles[edge];
 			auto t0 = triangles[tris.first];
