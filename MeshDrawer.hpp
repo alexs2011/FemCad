@@ -37,6 +37,10 @@ static MeshDrawer globalMeshDrawer;
 
 void display(void)
 {
+
+	if (started) {
+		onSpacePress();
+	}
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_POINT_SMOOTH);
 	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
@@ -125,4 +129,5 @@ void display(void)
 	glPopMatrix();
 
 	glutSwapBuffers();
+	glutPostRedisplay();
 }

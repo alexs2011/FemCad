@@ -916,6 +916,12 @@ namespace fg {
 
 			return *this;
 		}
+		inline bool operator ==(const rect& p) const {
+			return min == p.min && max == p.max;
+		}
+		inline bool operator !=(const rect& p) const {
+			return min != p.min || max != p.max;
+		}
 		inline rect& add_rect(const rect& p) {
 			min = vector3{ std::min(min.x, p.min.x) ,std::min(min.y, p.min.y) ,std::min(min.z, p.min.z) };
 			max = vector3{ std::max(max.x, p.max.x) ,std::max(max.y, p.max.y) ,std::max(max.z, p.max.z) };
@@ -938,6 +944,12 @@ namespace fg {
 		}
 	};
 
+
+
+
+
+
+	
 	// вроде бы это - квадродерево ???
 	template<int D, class T, int plane = axis::AXIS_X>
 	class FEMCADGEOMSHARED_EXPORT lookup_tree
@@ -1038,14 +1050,29 @@ namespace fg {
 			return;
 		}
 
+		inline bool add_to_container(const std::pair<rect, T>& element) {
+			for (size_t i{}; i < container.size(); ++i) {
+				if (container[i].second == element.second) {
+					if (container[i].first != element.first)
+					{
+						std::cout << "Problem in tree";
+						throw "Tree error";
+					}
+					return false;
+				}
+			}
+			container.push_back(element);
+			return true;
+		}
+
 		inline void add_element(const std::pair<rect, T>& element, size_t depth = 0)
 		{
 			if (depth == max_depth) { // || container.size() < Mx
-				container.push_back(element);
+				add_to_container(element);
 				return;
 			}
 			if (!(s[0] || s[1])) {
-				container.push_back(element);
+				add_to_container(element);
 				if (depth < max_depth && container.size() >= Mx) {
 					std::vector<std::pair<rect, T>> front, back;
 					double midaxis = 0.5 * (minimum[plane] + maximum[plane]);
@@ -1095,8 +1122,13 @@ namespace fg {
 				size_t i{};
 				auto s = container.size();
 				for (; i < s; i++) {
-					if (container[i].second == element.second)
+					if (container[i].second == element.second) {
+						if (container[i].first != element.first) {
+							std::cout << "Tree problems";
+							throw;
+						}
 						break;
+					}
 				}
 				if (i == container.size()) {
 					return false;

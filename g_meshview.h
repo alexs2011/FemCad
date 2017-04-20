@@ -188,7 +188,10 @@ namespace fg {
 		}
 	public:
 		inline bool isBoundary(Mesh2::EdgeIndex i) const {
-			//if (_edgeGeometry.size() <= i) return false;
+			if (_edgeGeometry.size() <= i) {
+				std::cout << "What da " << i << std::endl;
+				return false;
+			}
 			return _edgeGeometry[i].size() > 0;
 			//return std::any_of(geometry.begin(), geometry.end(), [=](_meshLineView x)->bool {return x.pos.count(i) > 0; });
 		}
@@ -327,7 +330,7 @@ namespace fg {
 				auto edges = _mesh.triangle(el);
 				// добавим точку в тр-к и вернем индексы трех добавленых ребер в out
 				_DebugTest();
-				auto res = _mesh.insert_point(pos, out, el);
+				res = _mesh.insert_point(pos, out, el);
 				_DebugTest();
 
 				// вытащим ребра из out
@@ -371,7 +374,7 @@ namespace fg {
 				add(std::get<2>(edges), tri0);
 
 				_DebugTest();
-				auto res = _mesh.insert_point(pos, out, el);
+				res = _mesh.insert_point(pos, out, el);
 				_DebugTest();
 
 					
@@ -397,7 +400,7 @@ namespace fg {
 					add(std::get<2>(edges), tri1);
 
 					_DebugTest();
-					auto res = _mesh.insert_point(pos, out, el);
+					res = _mesh.insert_point(pos, out, el);
 					_DebugTest();
 					if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 					if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
@@ -549,7 +552,7 @@ namespace fg {
 			return;
 		}
 
-		void Flip(const Mesh2::EdgeIndex edge, double r = 1.0) {
+		void Flip(const Mesh2::EdgeIndex edge, std::vector<size_t>& edges, double r = 1.0) {
 			if (isBoundary(edge))
 				return;
 			try {
@@ -575,7 +578,9 @@ namespace fg {
 			}
 			_DebugTest();
 			if (_mesh.flippable(edge, r)) {
-				_mesh.flip(edge);
+				auto e = _mesh.flip(edge);
+				auto s = _mesh.get_quadrangle_edges(e);
+				edges.insert(edges.end(),s.begin(),s.end());
 			}
 			_DebugTest();
 		}
@@ -615,6 +620,7 @@ namespace fg {
 			}
 		}
 		bool _DebugTestIntersection(size_t vx = 0xFFFFFFFF, size_t vt = 0xFFFFFFFF) const {
+#ifdef intersection_test
 			if (vx != 0xFFFFFFFF && vt != 0xFFFFFFFF) {
 				for (auto i : _mesh.point_edges[vx]) {
 					auto e0 = _mesh.edges[i];
@@ -632,10 +638,25 @@ namespace fg {
 					}
 				}
 			}
+#endif
 			return false;
 		}
-		bool _DebugTest() {
-#ifndef _DEBUG__
+		bool _DebugTest(int val = 0) {
+			//for (auto elem : _mesh.lookup().container)
+			//{
+			//	if (elem.first != _mesh.get_rect(_mesh.triangles[elem.second]))
+			//	{
+			//		std::cout << "Bad rect";
+			//		throw;
+			//	}
+			//}
+			//_mesh.get_rect
+			//if (_mesh.triangle_lookup->has_element_pred(_mesh.triangles.size(), [&](size_t l, size_t size) { 
+			//	return l >= size; 
+			//})) return true;
+			//for (size_t i{}; i < _mesh.triangles.size(); ++i) {
+			//}
+#ifdef _DEBUG__
 #define _point_edges_test
 #ifdef _point_edges_test
 			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
@@ -731,28 +752,41 @@ namespace fg {
 			return false;
 		}
 
-		std::array<Mesh2::EdgeIndex, 3> CollapseEdge(const Mesh2::EdgeIndex edge) {
+		std::vector<Mesh2::EdgeIndex> CollapseEdge(const Mesh2::EdgeIndex edge) {
+			if (_edgeGeometry[edge].size() > 1) return{};
 
-			for (auto i : _mesh.PointEdges()[_mesh.edge(edge).first]) {
-				auto t = _mesh.triangle(_mesh.edge_triangle(i).first);
-				if (isBoundary(std::get<0>(t))) return NotCollapsed;
-				if (isBoundary(std::get<1>(t))) return NotCollapsed;
-				if (isBoundary(std::get<2>(t))) return NotCollapsed;
-				t = _mesh.triangle(_mesh.edge_triangle(i).second);
-				if (isBoundary(std::get<0>(t))) return NotCollapsed;
-				if (isBoundary(std::get<1>(t))) return NotCollapsed;
-				if (isBoundary(std::get<2>(t))) return NotCollapsed;
+			if (isBoundary(edge)) {
+				
+
+				return{};
 			}
-			for (auto i : _mesh.PointEdges()[_mesh.edge(edge).second]) {
-				auto t = _mesh.triangle(_mesh.edge_triangle(i).first);
-				if (isBoundary(std::get<0>(t))) return NotCollapsed;
-				if (isBoundary(std::get<1>(t))) return NotCollapsed;
-				if (isBoundary(std::get<2>(t))) return NotCollapsed;
-				t = _mesh.triangle(_mesh.edge_triangle(i).second);
-				if (isBoundary(std::get<0>(t))) return NotCollapsed;
-				if (isBoundary(std::get<1>(t))) return NotCollapsed;
-				if (isBoundary(std::get<2>(t))) return NotCollapsed;
+
+			static std::vector<Mesh2::EdgeIndex> result;
+			result.clear();
+
+			bool first_is_edge{ false }, second_is_edge{ false };
+
+			auto p = _mesh.edge(edge).first;
+			for (auto i : _mesh.PointEdges()[p]) {
+				if (i == edge) continue;
+				if (isBoundary(i)) {
+					first_is_edge = true;
+					break;
+				}
 			}
+			p = _mesh.edge(edge).second;
+			for (auto i : _mesh.PointEdges()[p]) {
+				if (i == edge) continue;
+				if (isBoundary(i)) {
+					first_is_edge = true;
+					break;
+				}
+			}
+			if (first_is_edge && second_is_edge) {
+
+				return{};
+			}
+
 			//_DebugTest();
 			auto ep0 = _mesh.edges[edge].first;
 			auto ets = _mesh.oppositeVertices(edge);
@@ -760,25 +794,91 @@ namespace fg {
 			//if (_DebugTestIntersection(ep0, ets.first) || (ets.first != ets.second && _DebugTestIntersection(ep0, ets.second))) {
 			//	throw "Sovsem beda";
 			//}
+			auto pt = _mesh.edge(edge).first;
+			if (pt == _mesh.pointsCount()-1) {
+				pt = _mesh.edge(edge).second;
+			}
 			auto w = _mesh.collapseWeight(edge);
+			if (isnan(w.first)) return{};
+			double weight = 0.5 * (w.first + w.second);
+
+			auto check_weight_intersection = [&](size_t point, double wght) {
+				std::vector<vector3> int_points;
+				auto intersect_boundary = [&](size_t ind, size_t bound) -> bool {
+					if (ind == bound) return false;
+					auto edge_beg = point == _mesh.edge(ind).first ? _mesh.edge(ind).second : _mesh.edge(ind).first;
+					for (auto i : _edgeGeometry[bound]) {
+						const EllipticSegment* el = dynamic_cast<const EllipticSegment*>(&geometry[i].line);
+						if (el == nullptr) continue;
+						if (Intersector<ILine>::intersect_segment(*el, _mesh.point(edge_beg), _mesh.sample_edge(edge, wght), int_points) == 1)
+							return true;
+					}
+					return false;
+				};
+				for (auto i : _mesh.PointEdges()[point]) {
+					if (i == edge) continue;
+					auto t = _mesh.triangle(_mesh.edge_triangle(i).first);
+					if (intersect_boundary(i, std::get<0>(t))) return false;
+					if (intersect_boundary(i, std::get<1>(t))) return false;
+					if (intersect_boundary(i, std::get<2>(t))) return false;
+					t = _mesh.triangle(_mesh.edge_triangle(i).second);
+					if (intersect_boundary(i, std::get<0>(t))) return false;
+					if (intersect_boundary(i, std::get<1>(t))) return false;
+					if (intersect_boundary(i, std::get<2>(t))) return false;
+				}
+				return true;
+			};
+			if (first_is_edge) {
+				if (w.first <= 0.0) {
+					weight = 0.0;
+					if (!check_weight_intersection(_mesh.edge(edge).first, weight))
+						return{};
+				}else{
+					return{};
+				}
+			}
+			if (second_is_edge) {
+				if (w.second >= 1.0) {
+					weight = 1.0;
+					if (!check_weight_intersection(_mesh.edge(edge).second, weight))
+						return{};
+				}
+				else {
+					return{};
+				}
+			}
+
 			std::cout << _mesh.point(_mesh.edge(edge).first) << _mesh.point(_mesh.edge(edge).second) << std::endl;
-			std::cout << "w= " << w << std::endl;
+			std::cout << "w= " << weight << std::endl;
 
 			//if (w != 0.5) return{Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
 			//if(std::isnan(w)) return{ Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
-			_DebugTest();
-			auto s = _mesh.collapseEdge(edge, w);
+			if (_DebugTest(100)) {
+				std::cout << "Failed at start of " << edge << std::endl;
+				throw;
+			}
+			auto s = _mesh.collapseEdge(edge, weight);
+			bool collapsed = false;
 			for (auto i : s) {
 				if (i == Mesh2::NotAnEdge) continue;
+				collapsed = true;
 				_edgeGeometry[i] = std::move(_edgeGeometry.back());
 				_edgeGeometry.pop_back();
+				result.push_back(i);
 			}
-			_DebugTest();
+			if (collapsed && _mesh.point_edge(pt).size()) {
+				result.insert(result.end(), _mesh.point_edge(pt).begin(), _mesh.point_edge(pt).end());
+			}
+			if (_DebugTest(-100)) {
+				std::cout << "Failed at end of " << edge << std::endl;
+				throw;
+			}
+
 
 			if (_DebugTestIntersection(ep0, ets.first) || (ets.first != ets.second && _DebugTestIntersection(ep0, ets.second))) {
-				throw "Ne Sovsem beda";
+  				throw "Ne Sovsem beda";
 			}
-			return s;
+			return std::move( result );
 		}
 
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {

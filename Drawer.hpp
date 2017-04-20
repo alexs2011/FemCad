@@ -8,9 +8,9 @@ void processUsualKeys(unsigned char key, int xx, int yy);
 
 int window_id;
 double xChange = 0.0, yChange = 0.0, scale = 1.0;
+bool started = false;
 
 std::function<void()> onSpacePress;
-
 class Drawer
 {
 private:
@@ -23,6 +23,7 @@ private:
 public:
 	static const double viewWidth, viewHeight;
 
+	//std::function<void()> onSpacePress;
 public:
 	Drawer() = default;
 	~Drawer() = default;
@@ -131,7 +132,14 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 	case 32: // space key
 		onSpacePress();
 		break;
+	case 'y':
+		started = true;
+		break;
+	case 'u':
+		started = false;
+		break;
 	}
+
 	set_perspective();
 	glutPostRedisplay();
 }

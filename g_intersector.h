@@ -60,7 +60,7 @@ namespace fg {
 				}
 			}
 		}
-		static int intersect_segment(const Element& s, vector3 l1p0, vector3 l1p1, std::vector<vector3>& res) {
+		static int intersect_segment(const Element& s, const vector3& l1p0, const vector3& l1p1, std::vector<vector3>& res) {
 			try {
 				auto& e = dynamic_cast<const LineSegment&>(s);
 				return intersect_segment(e, l1p0, l1p1, res);
@@ -70,7 +70,7 @@ namespace fg {
 				return intersect_segment(e, l1p0, l1p1, res);
 			}
 		}
-		static int intersect_segment(const LineSegment& l0, vector3 l1p0, vector3 l1p1, std::vector<vector3>& res) {
+		static int intersect_segment(const LineSegment& l0, const vector3& l1p0, const vector3& l1p1, std::vector<vector3>& res) {
 			auto l0p0 = l0.P0();
 			auto l0p1 = l0.P1();
 
@@ -309,7 +309,7 @@ namespace fg {
 			}
 			return 0;
 		}
-		static int intersect_segment(const EllipticSegment& e, vector3 l1p0, vector3 l1p1, std::vector<vector3>& res) {
+		static int intersect_segment(const EllipticSegment& e, const vector3& l1p0, const vector3& l1p1, std::vector<vector3>& res) {
 			auto l0p0 = e.P0();
 			auto l0p1 = e.P1();
 			auto c = e.Center();

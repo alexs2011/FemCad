@@ -115,11 +115,15 @@ void FemCadGeomTester::Launch()
 	MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
 
 	//LambdaElementSize<double> size([](const vector3& p) {return 0.25; });
-	combiner.AdjustMesh(size);
+	//combiner.AdjustMesh(size);
 	//combiner.AddIntersectingMesh(mesh_form0);
 
-	//combiner.AdjustMeshInitialization(size);
-	//onSpacePress = ([&]()->void { if (!combiner.AdjustIteration(size)) std::cout << "Mesh optimization complete" << std::endl; });
+	combiner.AdjustMeshInitialization(size);
+	size_t mode = 1; 
+	onSpacePress = ([&]()->void { 
+		if (combiner.AdjustIteration(size, mode) == 0) 
+			std::cout << "Mesh optimization complete" << std::endl; 
+	});
 
 	globalMeshDrawer.draw(combiner);
 	//globalMeshDrawer.draw(*mesh_base);
