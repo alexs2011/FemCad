@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "stdafx.h"
 #include "g_meshing.h"
 #include "g_meshview.h"
@@ -32,12 +32,12 @@ public:
 	}
 };
 
-// Ãëîáàëüíûé ýêçåïëÿð êëàññà
+// âˆšÐ»Ð¾Ð±Ð°Ð»ÑŒÐ½Ñ‹Ð¹ ÑÐºÐ·ÐµÐ¿Ð»Â¤Ñ€ ÐºÐ»Ð°ÑÑÐ°
 static MeshDrawer globalMeshDrawer;
 
 void display(void)
 {
-
+	//Sleep(100);
 	if (started) {
 		onSpacePress();
 	}
@@ -87,14 +87,14 @@ void display(void)
 				if (y > yMax) yMax = y;
 				if (y < yMin) yMin = y;*/
 			};
-			// ðèñóåì ðåáðî
+			// Ñ€Ð¸ÑÑƒÐµÐ¼ Ñ€ÐµÐ±Ñ€Ð¾
 			glBegin(GL_LINES);
 			auto p = _mesh.getCoordsByPointIdx(e.first);
 			draw_p(p.x, p.y, p.z);
 			p = _mesh.getCoordsByPointIdx(e.second);
 			draw_p(p.x, p.y, p.z);
 			glEnd();
-			// ðèñóåì âåðøèíû ðåáðà
+			// Ñ€Ð¸ÑÑƒÐµÐ¼ Ð²ÐµÑ€ÑˆÐ¸Ð½Ñ‹ Ñ€ÐµÐ±Ñ€Ð°
 			//glPointSize(7.0);
 			//glColor3f(0.2f, 0.2f, 0.2f);
 			//glBegin(GL_POINTS);
@@ -109,12 +109,12 @@ void display(void)
 
 
 
-	// îïðåäåëèì ðàçìåðû ñöåíû (ò.å. êàêîé ïðìîóãëüîíèê ñöåíû çàõâàòûâàåò íàøà êàìåðà)
+	// Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ð¸Ð¼ Ñ€Ð°Ð·Ð¼ÐµÑ€Ñ‹ ÑÑ†ÐµÐ½Ñ‹ (Ñ‚.Ðµ. ÐºÐ°ÐºÐ¾Ð¹ Ð¿Ñ€Ð¼Ð¾ÑƒÐ³Ð»ÑŒÐ¾Ð½Ð¸Ðº ÑÑ†ÐµÐ½Ñ‹ Ð·Ð°Ñ…Ð²Ð°Ñ‚Ñ‹Ð²Ð°ÐµÑ‚ Ð½Ð°ÑˆÐ° ÐºÐ°Ð¼ÐµÑ€Ð°)
 	int w = glutGet(GLUT_WINDOW_WIDTH);
 	int h = glutGet(GLUT_WINDOW_HEIGHT);
 	double xMax, xMin, yMax, yMin, x, y;
 	calcBoundaries(w, h, xChange, yChange, scale, xMin, xMax, yMin, yMax);
-	// ðèñóåì êîîðäèíàòíûå îñè
+	// Ñ€Ð¸ÑÑƒÐµÐ¼ ÐºÐ¾Ð¾Ñ€Ð´Ð¸Ð½Ð°Ñ‚Ð½Ñ‹Ðµ Ð¾ÑÐ¸
 	glColor3f(0.3f, 0.3f, 0.3f);
 	glLineWidth(1);
 	//glPushMatrix();

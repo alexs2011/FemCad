@@ -23,6 +23,10 @@ namespace fg {
 		void SetCriterion() {
 			criterion = (std::make_unique<Criterion>(Criterion{ base.mesh() }));
 		}
+		template<class Criterion, class P>
+		void SetCriterion(P param) {
+			criterion = (std::make_unique<Criterion>(Criterion{ base.mesh(), param }));
+		}
 		void AddMesh(std::shared_ptr<IMeshView> _mesh) {
 			meshes.push_back(_mesh);
 
@@ -89,13 +93,26 @@ namespace fg {
 			if (mode == 1) { // collapse
 				auto b = edges_list.back();
 				edges_list.pop_back();
-				if (b < base.mesh().edgesCount() && criterion->get(b, size) == CriterionResult::Short) {
-					auto r = base.CollapseEdge(b);
-					for (auto j : r) {
-						//std::cout << j;
-						edges_list.push_back(j);
-						base.Flip(j, edges_list);
-						//edges_list_new.push_back(j);
+				bool condition = false;
+				if (b < base.mesh().edgesCount()) {
+					if (base.isBoundary(b)) {
+						for (auto i : base._edgeGeometry[b]) {
+							condition = criterion->get(b, BoundaryElementSize<T>(base.geometry[i].line)) == CriterionResult::Short;
+							if (condition) break;
+						}
+					}
+					else {
+						condition = criterion->get(b, size) == CriterionResult::Short;
+					}
+					if (condition) {
+						auto r = base.CollapseEdge(b);
+						for (auto j : r) {
+							//std::cout << j;
+							edges_list.push_back(j);
+							if (j < base.mesh().edgesCount()) 
+								base.Flip(j, edges_list);
+							//edges_list_new.push_back(j);
+						}
 					}
 				}
 				if (edges_list.empty()) {
@@ -103,7 +120,8 @@ namespace fg {
 						for (size_t i{}; i < base.mesh().edgesCount(); i++)
 							edges_list.push_back(i);
 						//first = false;
-					}else{
+					}
+					else {
 						edges_list = std::move(edges_list_new);
 					}
 					edges_list_new.clear();
@@ -128,7 +146,17 @@ namespace fg {
 				//if (edges_list.empty()) return mode = 1;
 				auto b = edges_list.back();
 				edges_list.pop_back();
-				if (criterion->get(b, size) == CriterionResult::Long) {
+				bool condition = false;
+				if (base.isBoundary(b)) {
+					for (auto i : base._edgeGeometry[b]) {
+						condition = criterion->get(b, BoundaryElementSize<T>(base.geometry[i].line)) == CriterionResult::Long;
+						if (condition) break;
+					}
+				}
+				else {
+					condition = criterion->get(b, size) == CriterionResult::Long;
+				}
+				if (condition) {
 					auto end = edges_list_new.size();
 					base.SubdivideEdge(b, edges_list_new);
 					for (auto j = end; j < edges_list_new.size(); ++j) {
@@ -143,8 +171,8 @@ namespace fg {
 				edges_list.pop_back();
 				auto end = edges_list.size();
 				base.Flip(b, edges_list);
-				if(end < edges_list.size())
-					edges_list_new.insert(edges_list_new.end(), edges_list.begin()+end, edges_list.end());
+				if (end < edges_list.size())
+					edges_list_new.insert(edges_list_new.end(), edges_list.begin() + end, edges_list.end());
 				if (edges_list.empty()) {
 					//for (size_t i{}; i < base.mesh().edgesCount(); i++)
 					edges_list = std::move(edges_list_new);

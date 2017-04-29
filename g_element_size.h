@@ -18,7 +18,7 @@ namespace fg {
 		std::function<S(const vector3&)> _func;
 	public:
 		LambdaElementSize() = delete;
-		LambdaElementSize(std::function<S(const vector3&)> f) : _func{ f }, IElementSize<S>(){};
+		LambdaElementSize(std::function<S(const vector3&)> f) : _func{ f }, IElementSize<S>() {};
 		LambdaElementSize(const LambdaElementSize&) = default;
 		virtual S get_size(const vector3& point) const {
 			return _func(point);
@@ -37,6 +37,45 @@ namespace fg {
 		//MeshE
 	};
 
+	template<class S>
+	class BoundaryElementSize : public IElementSize<S> {
+		const ILine& l;
+	public:
+		BoundaryElementSize(const ILine& l) : l{ l } {}
+		BoundaryElementSize(const BoundaryElementSize&) = default;
+
+		// вычисляется размер элемента в точке point
+		// возвращает примерную длину ребра на границе
+		S get_size(const vector3& point) const override
+		{
+			auto t = l.getParam(point);
+
+			auto N = size_t(l.getSetting()->getParameter<DoubleParameter>("N"));
+			auto q = l.getSetting()->getParameter<DoubleParameter>("q");
+
+			if (q == 1.0) {
+				auto s0 = int(t * N) * 1.0 / N;
+				auto s1 = s0 + 1.0 / N;
+				return (l.sample(s1) - l.sample(s0)).length();
+			}
+			auto div = 1.0 / (std::pow(q, (double)N) - 1.0);
+			double s1 = 0.0, s0 = 0.0;
+			for (size_t i{}; i < N; ++i) {
+				s0 = s1;
+				s1 = (std::pow(q, (double)i) - 1) * div;
+				if (s1 >= t) break;
+			}
+			return _eval<S>(l.sample(s1) - l.sample(s0));
+		}
+	private:
+		template<class T>
+		T _eval(const vector3&) const { throw; }
+		template<>
+		vector3 _eval<vector3>(const vector3& v) const { return v; }
+		template<>
+		double _eval<double>(const vector3& v) const { return v.length(); }
+	};
+
 	class MeshElementSizeIsoMaxEdgeLength : public MeshElementSize<double>
 	{
 	public:
@@ -48,19 +87,17 @@ namespace fg {
 		}
 
 		// вычисляется размер элемента в точке point
-		// возвращает скалярное произведение l-координат треугольника на длину максимального ребра треугольника
+		// возвращает взвешенный размер элемента на треугольнике
 		double get_size(const vector3& point) const override
 		{
 			// индексы точек треугольника, на который попадает point
 			std::tuple<size_t, size_t, size_t> verts;
-			// преобразованные с помощью обратной трансформационной матрицы координаты точки point
-			// похоже, что это l-координаты: http://dolivanov.ru/sites/default/files/_13.pdf ???
+
 			auto res = _mesh.cast(point, verts);
 			return res & vector3{ max_edge(std::get<0>(verts)), max_edge(std::get<1>(verts)), max_edge(std::get<2>(verts)) };
 		}
 
-		// ищется максимальное ребро (хотя внутри ищется минимальное ребро, т.е. с наименьшей длиной) ???
-		// может быть ошибка ???
+		// ищется максимальное ребро (хотя внутри ищется минимальное ребро, т.е. с наименьшей длиной)
 		double max_edge(size_t vertex) const
 		{
 			double res = std::numeric_limits<double>::max();
@@ -77,7 +114,7 @@ namespace fg {
 		std::vector<IElementSize<S>> collection;
 	public:
 		template<class It>
-		ComplexElementSize(It _esBegin, It _esEnd) : collection(_esBegin, _esEnd){}
+		ComplexElementSize(It _esBegin, It _esEnd) : collection(_esBegin, _esEnd) {}
 		virtual S get_size(const vector3& point) const = 0;
 	};
 

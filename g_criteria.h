@@ -19,12 +19,15 @@ namespace fg {
 	};
 
 	class OnePointCriterion : public ICriterion {
+		double minimal_size = 1e-5;
 	public:
 		using ICriterion::ICriterion;
+		OnePointCriterion(const Mesh2& mesh, double min_size) : ICriterion{ mesh }, minimal_size{ min_size } {}
 		virtual CriterionResult get(Mesh2::EdgeIndex edge, const IElementSize<double>& s) override {
 			// берем середину отрезка и на основе него вычисляем размер элемента ???
 			auto size = s.get_size(base.sample_edge(edge, 0.5));
 			double l = base.edge_length(edge);
+			if (l < minimal_size) return CriterionResult::Short;
 			// относительная погрешность
 			if (size > 1e38) return CriterionResult::Fit;
 			double error = (l / size - 1.0);

@@ -392,11 +392,11 @@ namespace fg {
 			auto curv = getCurve().classify(pp);
 			auto ddot = n & (pp - pt0);
 			//if (curv == 0 && ddot * dot < 0.0f) return 0; // on _curve
-			if (ddot > FG_EPS) {
+			if (ddot > FG_EPS_SQ) {
 				if (dot > 0) return 1;
 				else return curv;
 			}
-			if (ddot < -FG_EPS) {
+			if (ddot < -FG_EPS_SQ) {
 				if (dot < 0) return -1;
 				else return -curv;
 			}

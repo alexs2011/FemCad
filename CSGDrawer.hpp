@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "stdafx.h"
 #include "g_geometry.h"
@@ -100,7 +100,7 @@ void display_CSG(void)
 	int h = glutGet(GLUT_WINDOW_HEIGHT);
 
 	std::cout << "w " << w << " h " << h << std::endl;
-	// определим размеры сцены (т.е. какой прмоугльоник сцены захватывает наша камера)
+	// РѕРїСЂРµРґРµР»РёРј СЂР°Р·РјРµСЂС‹ СЃС†РµРЅС‹ (С‚.Рµ. РєР°РєРѕР№ РїСЂРјРѕСѓРіР»СЊРѕРЅРёРє СЃС†РµРЅС‹ Р·Р°С…РІР°С‚С‹РІР°РµС‚ РЅР°С€Р° РєР°РјРµСЂР°)
 	double xMax, xMin, yMax, yMin, x, y;
 	calcBoundaries(w, h, xChange, yChange, scale, xMin, xMax, yMin, yMax);
 	//glPointSize(1.0);
@@ -112,13 +112,13 @@ void display_CSG(void)
 			auto res = globalCSGDrawer.csg->classify({ x, y, 0. });
 			if (res != 1) {
 				if (res == 0) {
-					// граница
+					// РіСЂР°РЅРёС†Р°
 					pixel_data[3 * (i*w + j) + 0] = 0.f;
 					pixel_data[3 * (i*w + j) + 1] = 0.f;
 					pixel_data[3 * (i*w + j) + 2] = 0.f;
 				}
 				else {
-					// внутри
+					// РІРЅСѓС‚СЂРё
 					pixel_data[3 * (i*w + j) + 0] = 0.5f;
 					pixel_data[3 * (i*w + j) + 1] = 0.5f;
 					pixel_data[3 * (i*w + j) + 2] = 0.5f;
@@ -149,7 +149,7 @@ void display_CSG(void)
 	glPixelStorei(GL_UNPACK_ALIGNMENT, oldAlign);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, oldLen);
 
-	// рисуем координатные оси
+	// СЂРёСЃСѓРµРј РєРѕРѕСЂРґРёРЅР°С‚РЅС‹Рµ РѕСЃРё
 	//glMatrixMode(GL_MODELVIEW);
 	//glLoadIdentity();
 	//glPushMatrix();

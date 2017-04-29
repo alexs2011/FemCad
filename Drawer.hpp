@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "stdafx.h"
 
@@ -54,7 +54,7 @@ public:
 const double Drawer::viewWidth = 4.0;
 const double Drawer::viewHeight = 4.0;
 
-// вычисляет границы предметной области, на которую попадает камера
+// РІС‹С‡РёСЃР»СЏРµС‚ РіСЂР°РЅРёС†С‹ РїСЂРµРґРјРµС‚РЅРѕР№ РѕР±Р»Р°СЃС‚Рё, РЅР° РєРѕС‚РѕСЂСѓСЋ РїРѕРїР°РґР°РµС‚ РєР°РјРµСЂР°
 void calcBoundaries(int w, int h, double xChange, double yChange, double scale,
 	double& xMin, double& xMax, double& yMin, double& yMax)
 {
@@ -141,7 +141,7 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 	}
 
 	set_perspective();
-	glutPostRedisplay();
+	//glutPostRedisplay();
 }
 
 void reshape(int w, int h)

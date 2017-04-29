@@ -712,6 +712,12 @@ namespace fg {
 			return s;
 		}
 
+		double round_eps(double x, double eps) const {
+			long long u = long long(x);
+			return u + (round((x - u) / eps)) * eps;
+		}
+#define _EQ_EPS 1e-12
+
 		polynome derivative() {
 			polynome nc(coef.size() - 1);
 			for (size_t i = 1U; i < coef.size(); i++) {
@@ -724,7 +730,7 @@ namespace fg {
 				v = true;
 				return;
 			}
-			if (fabs(coef.back()) < 1e-12) {
+			if (fabs(coef.back()) < 2*_EQ_EPS) {
 				auto pp = shrink(*this);
 				pp.find_roots(v, roots);
 				return;
@@ -735,31 +741,31 @@ namespace fg {
 			}
 			if (coef.size() == 2) {
 				v = false;
-				roots.push_back(-coef[0] / coef[1]);
+				roots.push_back(round_eps(-coef[0] / coef[1], _EQ_EPS));
 				return;
 			}
-			if (coef.size() == 3) {
+			/*if (coef.size() == 3) {
 				v = false;
 				double D = coef[1] * coef[1] - 4.0 * coef[0] * coef[2];
 				double eps = std::fabs(2.0e-11*std::max(coef[0], std::max(coef[1], coef[2]))*(coef[1] - 2 * (coef[0] + coef[2])));
-				if (std::fabs(D) < eps) {
-					roots.push_back(-coef[1] / coef[2] * 0.5);
+				if (std::fabs(D) < -eps) {
 					return;
 				}
-				if (D < 0) {
+				if (D < eps) {
+					roots.push_back(-coef[1] / coef[2] * 0.5);
 					return;
 				}
 				roots.push_back((-coef[1] - std::sqrt(D)) / coef[2] * 0.5);
 				roots.push_back((-coef[1] + std::sqrt(D)) / coef[2] * 0.5);
 				return;
-			}
+			}*/
 			if (!(coef.size() % 2)) {
 				// find one root
 				double root;
 				double l, r;
 				find_boundaries_odd(l, r);
 				root = binary_search(l, r, evaluate(l), evaluate(r));
-				roots.push_back(root);
+				roots.push_back(round_eps(root, _EQ_EPS));
 				divide(root).find_roots(v, roots);
 				return;
 			}
@@ -773,8 +779,8 @@ namespace fg {
 			for (size_t i = 0U; i < der_roots.size(); i++) {
 				right = der_roots[i];
 				fr = evaluate(right);
-				if (std::fabs(fr) < 1e-13) {
-					roots.push_back(right);
+				if (std::fabs(fr) < 1e-100) {
+					roots.push_back(round_eps(right, _EQ_EPS));
 					if (i == der_roots.size() - 1) {
 						v = false;
 						return;
@@ -783,9 +789,15 @@ namespace fg {
 					fl = evaluate(left);
 					continue;
 				}
-				if (fr * fl < 0) {
+				if (fl < 1e-100) {
+					roots.push_back(round_eps(left, _EQ_EPS));
+					left = right;
+					fl = fr;
+					continue;
+				}
+				if (fr * fl <= 0) {
 					double root = binary_search(left, right, fl, fr);
-					roots.push_back(root);
+					roots.push_back(round_eps(root, _EQ_EPS));
 					left = right;
 					fl = fr;
 				}
@@ -794,9 +806,11 @@ namespace fg {
 				v = false;
 				return;
 			}
+			left = right;
+			fl = fr;
 			find_right_boundary_even(left, right);
 			double r = binary_search(left, right, fl, evaluate(right));
-			roots.push_back(r);
+			roots.push_back(round_eps(r, _EQ_EPS));
 			v = false;
 			return;
 		}
@@ -821,10 +835,11 @@ namespace fg {
 	protected:
 		double binary_search(double l, double r, double fl, double fr) {
 			double c = 0.5 * (r + l);
-			if (fabs(fl) < 1e-40) return l;
-			if (fabs(fr) < 1e-40) return r;
-			if (r - l < 1e-11) return c;
+			if (fabs(fl) < 1e-100) return l;
+			if (fabs(fr) < 1e-100) return r;
 			double fc = this->operator ()(c);
+			if (c == r || c == l) return c;
+			//if (r - l < 1e-12) return c;
 			if (fl > 0) {
 				if (fc > 0) return binary_search(c, r, fc, fr);
 				else return binary_search(l, c, fl, fc);
@@ -1179,6 +1194,17 @@ namespace fg {
 				}
 			}
 			return (s[0] && s[0]->has_element_pred(e,f)) || (s[1] && s[1]->has_element_pred(e,f));
+		}
+		inline bool traverse_tree(std::function<bool(const rect&, T)> f) const {
+			if (container.size()) {
+				for (size_t i{}; i < container.size(); ++i) {
+					if (f(container[i].first, container[i].second)) {
+						std::cout << "Element " << container[i].second << " is wrong!" << std::endl;
+						return true;
+					}
+				}
+			}
+			return (s[0] && s[0]->traverse_tree(f)) || (s[1] && s[1]->traverse_tree(f));
 		}
 
 		friend std::ostream& operator<<(std::ostream& s, const lookup_tree<D, T, plane>& p) {
