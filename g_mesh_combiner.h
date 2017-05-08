@@ -134,7 +134,7 @@ namespace fg {
 			}
 			if (mode == 2) { // subdivide
 				if (edges_list.empty()) {
-					std::cout << "New edges list = " << edges_list_new.size();
+					std::cout << "New edges list = " << edges_list_new.size() << std::endl;
 					std::set<size_t> rep(edges_list_new.begin(), edges_list_new.end());
 					edges_list_new = std::vector<size_t>(rep.begin(), rep.end());
 					edges_list = std::move(edges_list_new);
@@ -152,6 +152,7 @@ namespace fg {
 						condition = criterion->get(b, BoundaryElementSize<T>(base.geometry[i].line)) == CriterionResult::Long;
 						if (condition) break;
 					}
+					condition = !condition ? criterion->get(b, size) == CriterionResult::Long : condition;
 				}
 				else {
 					condition = criterion->get(b, size) == CriterionResult::Long;
@@ -171,6 +172,7 @@ namespace fg {
 				edges_list.pop_back();
 				auto end = edges_list.size();
 				base.Flip(b, edges_list);
+				edges_list_new.push_back(b);
 				if (end < edges_list.size())
 					edges_list_new.insert(edges_list_new.end(), edges_list.begin() + end, edges_list.end());
 				if (edges_list.empty()) {

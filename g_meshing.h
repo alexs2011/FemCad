@@ -297,9 +297,7 @@ namespace fg {
 			auto t1v = edges[et1].first == e.first ? edges[et1].second : edges[et1].first;
 
 			// Updating tree
-			auto remove_tri_from_tree = [&](size_t tri, size_t last) {
-				//auto last = triangles.size() - 1;
-				remove_triangle_from_tree(tri);
+			auto replace_triangle_in_tree = [&](size_t tri, size_t last) {
 				if (tri != last) {
 					replace_triangle(last, tri);
 				}
@@ -311,28 +309,35 @@ namespace fg {
 				if (edge_triangles[i].second != tris.first && edge_triangles[i].second != tris.second)
 					upd_tris.insert(edge_triangles[i].second);
 			}
-			for (auto i : upd_tris) {
-				shift_triangle_vertex(i, e.second, pos);
-			}
-			upd_tris.clear();
+			//for (auto i : upd_tris) {
+			//	shift_triangle_vertex(i, e.second, pos);
+			//}
+			//upd_tris.clear();
 			for (auto i : point_edges[e.first]) {
 				if (edge_triangles[i].first != tris.first && edge_triangles[i].first != tris.second)
 					upd_tris.insert(edge_triangles[i].first);
 				if (edge_triangles[i].second != tris.first && edge_triangles[i].second != tris.second)
 					upd_tris.insert(edge_triangles[i].second);
 			}
+			upd_tris.insert(tris.first);
+			upd_tris.insert(tris.second);
+			upd_tris.insert(triangles.size() - 1);
+			upd_tris.insert(triangles.size() - 2);
 			for (auto i : upd_tris) {
-				shift_triangle_vertex(i, e.first, pos);
+				remove_triangle_from_tree(i);
 			}
 
-			remove_tri_from_tree(std::max(tris.first, tris.second), triangles.size() - 1);
-			if (tris.first != tris.second)
-				remove_tri_from_tree(std::min(tris.first, tris.second), triangles.size() - 2);
-
-
+			//remove_triangle_from_tree(std::max(tris.first, tris.second));
+			//if (tris.first != tris.second)
+			//	remove_triangle_from_tree(std::min(tris.first, tris.second));
 
 			// Moving point
 			points[e.first] = pos;
+			points[e.second] = pos;
+
+			//replace_triangle_in_tree(std::max(tris.first, tris.second), triangles.size() - 1);
+			//if (tris.first != tris.second)
+			//	replace_triangle_in_tree(std::min(tris.first, tris.second), triangles.size() - 2);
 
 			// Update edge points
 			for (auto i : point_edges[e.second]) {
@@ -491,6 +496,11 @@ namespace fg {
 			if (isCorrect() == false) {
 				throw;
 			}
+			for (auto i : upd_tris) {
+				if (i >= triangles.size()) continue;
+				triangle_lookup->add_element(std::make_pair(get_rect(triangles[i]), i));
+			}
+
 			return result;
 		}
 		inline bool isCorrect() const {

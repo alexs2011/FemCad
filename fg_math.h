@@ -1136,20 +1136,26 @@ namespace fg {
 			if (!container.empty()) {
 				size_t i{};
 				auto s = container.size();
+				size_t deleted{s};
 				for (; i < s; i++) {
 					if (container[i].second == element.second) {
 						if (container[i].first != element.first) {
 							std::cout << "Tree problems";
 							throw;
 						}
-						break;
+						if (deleted != s) {
+							std::cout << "Tree duplicate!" <<std::endl;
+							throw;
+						}
+						deleted = i;
+						//break;
 					}
 				}
-				if (i == container.size()) {
+				if (deleted == container.size()) {
 					return false;
 				}
 				else {
-					container[i] = std::move(container.back());
+					container[deleted] = std::move(container.back());
 					container.pop_back();
 				}
 				return true;
@@ -1192,6 +1198,7 @@ namespace fg {
 						return true;
 					}
 				}
+				return false;
 			}
 			return (s[0] && s[0]->has_element_pred(e,f)) || (s[1] && s[1]->has_element_pred(e,f));
 		}
@@ -1203,10 +1210,30 @@ namespace fg {
 						return true;
 					}
 				}
+				return false;
 			}
 			return (s[0] && s[0]->traverse_tree(f)) || (s[1] && s[1]->traverse_tree(f));
 		}
 
+
+		bool isCorrect() const {
+			if (container.size()) {
+				std::set<T> dups;
+				for (size_t i{}; i < container.size(); ++i) {
+					if (dups.count(container[i].second)) {
+						std::cout << "Duplicate!";
+						return false;
+					}
+					dups.insert(container[i].second);
+					if (!rect(minimum, maximum).itersect(container[i].first)) {
+						std::cout << "Element " << container[i].second << " is wrong!" << std::endl;
+						return false;
+					}
+				}
+				return true;
+			}
+			return (!s[0] || s[0]->isCorrect()) && (!s[1] || s[1]->isCorrect());
+		}
 		friend std::ostream& operator<<(std::ostream& s, const lookup_tree<D, T, plane>& p) {
 			s << "{" << std::endl;
 			s << "\"plane\": \"" << plane << "\"," << std::endl;

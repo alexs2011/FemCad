@@ -282,35 +282,60 @@ namespace fg {
 							continue;
 						}
 						assert(res == GeometryType::Edge);
-						auto e0 = std::get<1>(out);
-						auto e1 = std::get<2>(out);
+						auto e0 = std::get<0>(out);
+						auto e1 = std::get<1>(out);
+						auto e2 = std::get<2>(out);
 						//if (std::get<0>(out) != 0xFFFFFFFF) 
-						if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
-						if (e0 != Mesh2::NotAnEdge && e0 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
+						if (e0 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 						if (e1 != Mesh2::NotAnEdge && e1 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
+						if (e2 != Mesh2::NotAnEdge && e2 >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 						// Дуга с индексом int_index.back() пересеклась с ребром el в точке int_points.back()
 
 						auto& line = geometry[int_index.back()];
 						double t = line.line.getParam(int_points.back());
 						auto e = line.get(t);
+						auto e_edge = _mesh.edge(e);
 						auto tt = line.pos[e];
 						size_t indx;
 						_mesh.cast(line.line.sample(tt), indx);
 
-						if (_mesh.edge(e0).first == indx || _mesh.edge(e0).second == indx)
-							geometry[int_index.back()].replace(t, e, e0, e1);
-						else
-							geometry[int_index.back()].replace(t, e, e1, e0);
+						e_edge = e_edge.first == indx ? e_edge : std::make_pair(e_edge.second, e_edge.first);
 
-						edge_geometry_replace(int_index.back(), e, e0, e1);
+						size_t ee0, ee1;// , vx;
+						//vx = _mesh.edge(e0).first == _mesh.edge(e1).second ? _mesh.edge(e0).second :
+						//	(_mesh.edge(e0).first == _mesh.edge(e1).first ? _mesh.edge(e0).first :
+						//	(_mesh.edge(e0).second == _mesh.edge(e1).second ? _mesh.edge(e0).second : _mesh.edge(e1).first));
+
+						auto fit_edge = [&](size_t edg, size_t& outedg_first, size_t& outedg_second) {
+							if (_mesh.edge(edg).first == e_edge.first || _mesh.edge(edg).second == e_edge.first) {
+								outedg_first = edg;
+							}
+							else if (_mesh.edge(edg).first == e_edge.second || _mesh.edge(edg).second == e_edge.second) {
+								outedg_second = edg;
+							}
+						};
+
+						fit_edge(el, ee0, ee1);
+						fit_edge(e0, ee0, ee1);
+						fit_edge(e1, ee0, ee1);
+						fit_edge(e2, ee0, ee1);
+
+						geometry[int_index.back()].replace(t, e, ee0, ee1);
+ 
+						//if (_mesh.edge(e0).first == indx || _mesh.edge(e0).second == indx)
+						//	geometry[int_index.back()].replace(t, e, e0, e1);
+						//else
+						//	geometry[int_index.back()].replace(t, e, e1, e0);
+
+						edge_geometry_replace(int_index.back(), e, ee0, ee1);
 
 						new_edges.push_back(e0);
 						new_edges.push_back(e1);
 
 						if (added_edges) {
-							added_edges->push_back(std::get<0>(out));
-							added_edges->push_back(std::get<1>(out));
-							added_edges->push_back(std::get<2>(out));
+							added_edges->push_back(e0);
+							added_edges->push_back(e1);
+							added_edges->push_back(e2);
 						}
 						break;
 					}
@@ -577,6 +602,7 @@ namespace fg {
 		}
 
 		void Flip(const Mesh2::EdgeIndex edge, std::vector<size_t>& edges, double r = 1.0) {
+			//return;
 			if (isBoundary(edge))
 				return;
 			//try {
@@ -621,7 +647,7 @@ namespace fg {
 					for (auto i : _edgeGeometry[bound]) {
 						const EllipticSegment* el = dynamic_cast<const EllipticSegment*>(&geometry[i].line);
 						if (el == nullptr) continue;
-						if (Intersector<ILine>::intersect_segment(*el, p0, p1, int_points) == 1)
+						if (Intersector<ILine>::intersect_segment(*el, p0, p1, int_points) > 1)
 							return true;
 					}
 					return false;
@@ -715,15 +741,23 @@ namespace fg {
 					auto e = _mesh.edge(i);
 					for (auto j : _edgeGeometry[i]) {
 						if (geometry[j].line.classify(_mesh.point(e.first)) != 0 ||
-							geometry[j].line.classify(_mesh.point(e.second)) != 0)
+							geometry[j].line.classify(_mesh.point(e.second)) != 0) {
+							std::cout << "Test 0" << std::endl;
 							return true;
+						}
 					}
 				}
 			}
-			if (_mesh.triangle_lookup->traverse_tree([&](const rect& r, size_t index) {return index >= _mesh.TrianglesLength(); })) {
+			if (!_mesh.triangle_lookup->isCorrect()) {
+				std::cout << "Test 3" << std::endl;
 				return true;
 			}
-			if (_mesh.triangle_lookup->traverse_tree([&](const rect& r, size_t index) {return r != _mesh.get_rect(_mesh.triangle(index));})) {
+			if (_mesh.triangle_lookup->traverse_tree([&](const rect& r, size_t index) {return r != _mesh.get_rect(_mesh.triangle(index)); })) {
+				std::cout << "Test 2" << std::endl;
+				return true;
+			}
+			if (_mesh.triangle_lookup->traverse_tree([&](const rect& r, size_t index) {return index >= _mesh.TrianglesLength(); })) {
+				std::cout << "Test 1" << std::endl;
 				return true;
 			}
 			//for (auto elem : _mesh.lookup().container)

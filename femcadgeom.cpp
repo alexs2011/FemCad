@@ -76,7 +76,7 @@ void FemCadGeomTester::Launch()
 
 	std::shared_ptr<RectMeshView> mesh_base{ std::make_shared<RectMeshView>(rect_base) };
 	MeshCombiner combiner{ RectMeshView(rect_base) };
-	combiner.SetCriterion<OnePointCriterion>();
+	combiner.SetCriterion<OnePointCriterion>(0.00000001);
 
 	combiner.AddMesh(mesh_form0);
 	MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
@@ -98,6 +98,10 @@ void FemCadGeomTester::Launch()
 	SETTINGHANDLE ls_base = std::make_shared<LineSetting>(LineSetting());
 	ls_base->setParameter("N", DoubleParameter(1));
 	ls_base->setParameter("q", DoubleParameter(1));
+
+	SETTINGHANDLE ls_cut_circle = std::make_shared<LineSetting>(LineSetting());
+	ls_cut_circle->setParameter("N", DoubleParameter(3));
+	ls_cut_circle->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting()); // bound 1
 	ls_1->setParameter("N", DoubleParameter(2));
@@ -138,6 +142,31 @@ void FemCadGeomTester::Launch()
 	SETTINGHANDLE ls_10 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 2 -
 	ls_10->setParameter("N", DoubleParameter(6));
 	ls_10->setParameter("q", DoubleParameter(1.));
+
+	SETTINGHANDLE ls_winding = std::make_shared<LineSetting>(LineSetting());
+	ls_winding->setParameter("N", DoubleParameter(6));
+	ls_winding->setParameter("q", DoubleParameter(1.));
+
+	//proj setting
+	SETTINGHANDLE ls_11 = std::make_shared<LineSetting>(LineSetting()); // bound 1 down
+	ls_11->setParameter("N", DoubleParameter(6));
+	ls_11->setParameter("q", DoubleParameter(1.));
+
+	SETTINGHANDLE ls_12 = std::make_shared<LineSetting>(LineSetting()); // bound 1 up
+	ls_12->setParameter("N", DoubleParameter(3));
+	ls_12->setParameter("q", DoubleParameter(1.));
+
+	SETTINGHANDLE ls_13 = std::make_shared<LineSetting>(LineSetting()); // bound 2
+	ls_13->setParameter("N", DoubleParameter(3));
+	ls_13->setParameter("q", DoubleParameter(1.));
+
+	SETTINGHANDLE ls_14 = std::make_shared<LineSetting>(LineSetting()); // bound 2
+	ls_14->setParameter("N", DoubleParameter(3));
+	ls_14->setParameter("q", DoubleParameter(1.));
+
+	SETTINGHANDLE ls_15 = std::make_shared<LineSetting>(LineSetting()); // bound 2
+	ls_15->setParameter("N", DoubleParameter(3));
+	ls_15->setParameter("q", DoubleParameter(1.));
 
 	GHANDLE vBase0 = Vertex(s, vs, { -1.5,-0.5,0 }).getHandle();
 	GHANDLE vBase1 = Vertex(s, vs, { 1.5,-0.5,0 }).getHandle();
@@ -191,8 +220,143 @@ void FemCadGeomTester::Launch()
 	GHANDLE l18 = LineSegment(s2, ls_9, v18, v19).getHandle(); // bound 2 part 2 -
 	GHANDLE l19 = LineSegment(s2, ls_8, v19, v0).getHandle(); // bound 2 part 2 |
 
+	// left cut triangle
+	GHANDLE vLeftTri0 = Vertex(s2, vs, { -0.480633,0.325,0 }).getHandle();
+	GHANDLE vLeftTri1 = Vertex(s2, vs, { -0.475,0.325,0 }).getHandle();
+	GHANDLE vLeftTri2 = Vertex(s2, vs, { -0.475,0.330524,0 }).getHandle();
+	GHANDLE vLeftTri3 = Vertex(s2, vs, { -0.4778165,0.327762,0 }).getHandle();
+
+	GHANDLE lLeftTri0 = LineSegment(s2, ls_base, vLeftTri0, vLeftTri1).getHandle();
+	GHANDLE lLeftTri1 = LineSegment(s2, ls_base, vLeftTri1, vLeftTri2).getHandle();
+	GHANDLE lLeftTri2 = LineSegment(s2, ls_base, vLeftTri2, vLeftTri3).getHandle();
+	GHANDLE lLeftTri3 = LineSegment(s2, ls_base, vLeftTri3, vLeftTri0).getHandle();
+
+	// right cut triangle
+	GHANDLE vRightTri0 = Vertex(s2, vs, { 0.480633,0.325,0 }).getHandle();
+	GHANDLE vRightTri1 = Vertex(s2, vs, { 0.475,0.325,0 }).getHandle();
+	GHANDLE vRightTri2 = Vertex(s2, vs, { 0.475,0.330524,0 }).getHandle();
+	GHANDLE vRightTri3 = Vertex(s2, vs, { 0.4778165,0.327762,0 }).getHandle();
+
+	GHANDLE lRightTri0 = LineSegment(s2, ls_base, vRightTri0, vRightTri1).getHandle();
+	GHANDLE lRightTri1 = LineSegment(s2, ls_base, vRightTri1, vRightTri2).getHandle();
+	GHANDLE lRightTri2 = LineSegment(s2, ls_base, vRightTri2, vRightTri3).getHandle();
+	GHANDLE lRightTri3 = LineSegment(s2, ls_base, vRightTri3, vRightTri0).getHandle();
+
+	// cut quadrangle
+	GHANDLE vQuad0 = Vertex(s2, vs, { -0.005,0.34,0 }).getHandle();
+	GHANDLE vQuad1 = Vertex(s2, vs, { 0.005,0.34,0 }).getHandle();
+	GHANDLE vQuad2 = Vertex(s2, vs, { 0.005,0.35,0 }).getHandle();
+	GHANDLE vQuad3 = Vertex(s2, vs, { -0.005,0.35,0 }).getHandle();
+
+	GHANDLE lQuad0 = LineSegment(s2, ls_base, vQuad0, vQuad1).getHandle();
+	GHANDLE lQuad1 = LineSegment(s2, ls_base, vQuad1, vQuad2).getHandle();
+	GHANDLE lQuad2 = LineSegment(s2, ls_base, vQuad2, vQuad3).getHandle();
+	GHANDLE lQuad3 = LineSegment(s2, ls_base, vQuad3, vQuad0).getHandle();
+
+	// cut circle
+	GHANDLE vCircle0 = Vertex(s2, vs, { -0.008,0.065,0 }).getHandle();
+	GHANDLE vCircle1 = Vertex(s2, vs, { 0.,0.057,0 }).getHandle();
+	GHANDLE vCircle2 = Vertex(s2, vs, { 0.008,0.065,0 }).getHandle();
+	GHANDLE vCircle3 = Vertex(s2, vs, { 0.,0.073,0 }).getHandle();
+	GHANDLE vCircleCenter = Vertex(s2, vs, { 0.,0.065,0 }).getHandle();
+	
+	GHANDLE lCircle0 = EllipticSegment(s2, ls_cut_circle, vCircle0, vCircle1, vCircleCenter).getHandle();
+	GHANDLE lCircle1 = EllipticSegment(s2, ls_cut_circle, vCircle1, vCircle2, vCircleCenter).getHandle();
+	GHANDLE lCircle2 = EllipticSegment(s2, ls_cut_circle, vCircle2, vCircle3, vCircleCenter).getHandle();
+	GHANDLE lCircle3 = EllipticSegment(s2, ls_cut_circle, vCircle3, vCircle0, vCircleCenter).getHandle();
+
+	// left winding
+	GHANDLE vLeftWinding0 = Vertex(s2, vs, { -0.287,0.052,0 }).getHandle();
+	GHANDLE vLeftWinding1 = Vertex(s2, vs, { -0.185,0.052,0 }).getHandle();
+	GHANDLE vLeftWinding2 = Vertex(s2, vs, { -0.185,0.156,0 }).getHandle();
+	GHANDLE vLeftWinding3 = Vertex(s2, vs, { -0.287,0.156,0 }).getHandle();
+
+	GHANDLE lLeftWinding0 = LineSegment(s2, ls_winding, vLeftWinding0, vLeftWinding1).getHandle();
+	GHANDLE lLeftWinding1 = LineSegment(s2, ls_winding, vLeftWinding1, vLeftWinding2).getHandle();
+	GHANDLE lLeftWinding2 = LineSegment(s2, ls_winding, vLeftWinding2, vLeftWinding3).getHandle();
+	GHANDLE lLeftWinding3 = LineSegment(s2, ls_winding, vLeftWinding3, vLeftWinding0).getHandle();
+
+	// right winding
+	GHANDLE vRightWinding0 = Vertex(s2, vs, { 0.287,0.052,0 }).getHandle();
+	GHANDLE vRightWinding1 = Vertex(s2, vs, { 0.185,0.052,0 }).getHandle();
+	GHANDLE vRightWinding2 = Vertex(s2, vs, { 0.185,0.156,0 }).getHandle();
+	GHANDLE vRightWinding3 = Vertex(s2, vs, { 0.287,0.156,0 }).getHandle();
+
+	GHANDLE lRightWinding0 = LineSegment(s2, ls_winding, vRightWinding0, vRightWinding1).getHandle();
+	GHANDLE lRightWinding1 = LineSegment(s2, ls_winding, vRightWinding1, vRightWinding2).getHandle();
+	GHANDLE lRightWinding2 = LineSegment(s2, ls_winding, vRightWinding2, vRightWinding3).getHandle();
+	GHANDLE lRightWinding3 = LineSegment(s2, ls_winding, vRightWinding3, vRightWinding0).getHandle();
+
+	// projection
+	GHANDLE vProj0 = Vertex(s2, vs, { -0.119765,0.036,0 }).getHandle();
+	GHANDLE vProj1 = Vertex(s2, vs, { 0.119765,0.036,0 }).getHandle();
+	GHANDLE vProj2 = Vertex(s2, vs, { 0.167748,0.078694,0 }).getHandle();
+	GHANDLE vProj3 = Vertex(s2, vs, { 0.18,0.115737,0 }).getHandle();
+	GHANDLE vProj4 = Vertex(s2, vs, { 0.18,0.157,0 }).getHandle();
+	GHANDLE vProj5 = Vertex(s2, vs, { 0.,0.154,0 }).getHandle();
+	GHANDLE vProj6 = Vertex(s2, vs, { -0.18,0.157,0 }).getHandle();
+	GHANDLE vProj7 = Vertex(s2, vs, { -0.18,0.115737,0 }).getHandle();
+	GHANDLE vProj8 = Vertex(s2, vs, { -0.167748,0.078694,0 }).getHandle();
+	GHANDLE vProjCenterL = Vertex(s2, vs, { -0.11,0.0952,0 }).getHandle();
+	GHANDLE vProjCenterR = Vertex(s2, vs, { 0.11,0.0952,0 }).getHandle();
+
+	GHANDLE lProj0 = LineSegment(s2, ls_11, vProj0, vProj1).getHandle(); // bound 1
+	//GHANDLE lProj1 = EllipticSegment(s2, ls_15, vProj1, vProj2, vProjCenterR).getHandle(); // bound 2
+	GHANDLE lProj1 = LineSegment(s2, ls_15, vProj1, vProj2).getHandle(); // bound 2
+	GHANDLE lProj2 = LineSegment(s2, ls_14, vProj2, vProj3).getHandle(); // bound 2
+	GHANDLE lProj3 = LineSegment(s2, ls_13, vProj3, vProj4).getHandle(); // bound 2
+	GHANDLE lProj4 = LineSegment(s2, ls_12, vProj4, vProj5).getHandle(); // bound 1
+	GHANDLE lProj5 = LineSegment(s2, ls_12, vProj5, vProj6).getHandle(); // bound 1
+	GHANDLE lProj6 = LineSegment(s2, ls_13, vProj6, vProj7).getHandle(); // bound 2
+	GHANDLE lProj7 = LineSegment(s2, ls_14, vProj7, vProj8).getHandle(); // bound 2
+	//GHANDLE lProj8 = EllipticSegment(s2, ls_15, vProj8, vProj0, vProjCenterL).getHandle(); // bound 2
+	GHANDLE lProj8 = LineSegment(s2, ls_15, vProj8, vProj0).getHandle(); // bound 2
+
+	// left little thing
+	GHANDLE vLeftThingy0 = Vertex(s2, vs, { -0.11,0.0352,0 }).getHandle();
+	GHANDLE vLeftThingy1 = Vertex(s2, vs, { -0.0108,0.0352,0 }).getHandle();
+	GHANDLE vLeftThingy2 = Vertex(s2, vs, { -0.1,0.0356,0 }).getHandle();
+	GHANDLE vLeftThingy3 = Vertex(s2, vs, { -0.0992,0.036,0 }).getHandle();
+	GHANDLE vLeftThingy4 = Vertex(s2, vs, { -0.119765,0.036,0 }).getHandle();
+	//GHANDLE vLeftThingyCenter_1 = Vertex(s2, vs, { -0.1008,0.036,0 }).getHandle();
+	//GHANDLE vLeftThingyCenter_2 = Vertex(s2, vs, { -0.0991506,0.0349011,0 }).getHandle();
+
+	
+	GHANDLE lLeftThingy0 = LineSegment(s2, ls_base, vLeftThingy0, vLeftThingy1).getHandle();
+	GHANDLE lLeftThingy1 = LineSegment(s2, ls_base, vLeftThingy1, vLeftThingy2).getHandle();
+	GHANDLE lLeftThingy2 = LineSegment(s2, ls_base, vLeftThingy2, vLeftThingy3).getHandle();
+	GHANDLE lLeftThingy3 = LineSegment(s2, ls_base, vLeftThingy3, vLeftThingy4).getHandle();
+	GHANDLE lLeftThingy4 = EllipticSegment(s2, ls_1, vLeftThingy4, vLeftThingy0, vProjCenterL).getHandle();
+
+	// right little thing
+	GHANDLE vRightThingy0 = Vertex(s2, vs, { 0.0108,0.0352,0 }).getHandle();
+	GHANDLE vRightThingy1 = Vertex(s2, vs, { 0.11,0.0352,0 }).getHandle();
+	GHANDLE vRightThingy2 = Vertex(s2, vs, { 0.119765,0.036,0 }).getHandle();
+	GHANDLE vRightThingy3 = Vertex(s2, vs, { 0.0992,0.036,0 }).getHandle();
+	GHANDLE vRightThingy4 = Vertex(s2, vs, { 0.1,0.0356,0 }).getHandle();
+	//GHANDLE vRightThingyCenter_1 = Vertex(s2, vs, { -0.1008,0.036,0 }).getHandle();
+	//GHANDLE vRightThingyCenter_2 = Vertex(s2, vs, { -0.0991506,0.0349011,0 }).getHandle();
+
+
+	GHANDLE lRightThingy0 = LineSegment(s2, ls_base, vRightThingy0, vRightThingy1).getHandle();
+	GHANDLE lRightThingy1 = EllipticSegment(s2, ls_1, vRightThingy1, vRightThingy2, vProjCenterR).getHandle();
+	GHANDLE lRightThingy2 = LineSegment(s2, ls_base, vRightThingy2, vRightThingy3).getHandle();
+	GHANDLE lRightThingy3 = LineSegment(s2, ls_base, vRightThingy3, vRightThingy4).getHandle();
+	GHANDLE lRightThingy4 = LineSegment(s2, ls_base, vRightThingy4, vRightThingy0).getHandle();
+
+		
 	GHANDLE shape_base = primitive::Shape(s, ps, s, { lBase0, lBase1, lBase2, lBase3 }).getHandle();
 	GHANDLE shape_form0 = primitive::Shape(s2, ps, s2, { l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19 }).getHandle();
+	GHANDLE shape_leftTri = primitive::Shape(s2, ps, s2, { lLeftTri0, lLeftTri1, lLeftTri2, lLeftTri3 }).getHandle();
+	GHANDLE shape_rightTri = primitive::Shape(s2, ps, s2, { lRightTri0, lRightTri1, lRightTri2, lRightTri3 }).getHandle();
+	GHANDLE shape_quad = primitive::Shape(s2, ps, s2, { lQuad0, lQuad1, lQuad2, lQuad3 }).getHandle();
+	GHANDLE shape_circle = primitive::Shape(s2, ps, s2, { lCircle0, lCircle1, lCircle2, lCircle3 }).getHandle();
+	GHANDLE shape_leftWinding = primitive::Shape(s2, ps, s2, { lLeftWinding0, lLeftWinding1, lLeftWinding2, lLeftWinding3 }).getHandle();
+	GHANDLE shape_rightWinding = primitive::Shape(s2, ps, s2, { lRightWinding0, lRightWinding1, lRightWinding2, lRightWinding3 }).getHandle();
+	GHANDLE shape_proj = primitive::Shape(s2, ps, s2, { lProj0, lProj1, lProj2, lProj3, lProj4, lProj5, lProj6, lProj7, lProj8 }).getHandle();
+	GHANDLE shape_leftThingy = primitive::Shape(s2, ps, s2, { lLeftThingy0, lLeftThingy1, lLeftThingy2, lLeftThingy3, lLeftThingy4 }).getHandle();
+	GHANDLE shape_rightThingy = primitive::Shape(s2, ps, s2, { lRightThingy0, lRightThingy1, lRightThingy2, lRightThingy3, lRightThingy4 }).getHandle();
+
 
 	auto& sh_base = s.get<primitive::Shape>(shape_base);
 	RectView rect_base{ sh_base, v0, v1, v2, v3 };
@@ -200,39 +364,76 @@ void FemCadGeomTester::Launch()
 	auto& sh_form0 = s2.get<primitive::Shape>(shape_form0);
 	RectView rect_form0{ sh_form0, v1, v13, v0, v14 };
 
+	auto& sh_leftTri = s2.get<primitive::Shape>(shape_leftTri);
+	RectView rect_leftTri{ sh_leftTri, vLeftTri0, vLeftTri1, vLeftTri3, vLeftTri2 };
+
+	auto& sh_rightTri = s2.get<primitive::Shape>(shape_rightTri);
+	RectView rect_rightTri{ sh_rightTri, vRightTri0, vRightTri1, vRightTri3, vRightTri2 };
+
+	auto& sh_quad = s2.get<primitive::Shape>(shape_quad);
+	RectView rect_quad{ sh_quad, vQuad0, vQuad1, vQuad3, vQuad2 };
+
+	auto& sh_circle = s2.get<primitive::Shape>(shape_circle);
+	RectView rect_circle{ sh_circle, vCircle0, vCircle1, vCircle3, vCircle2 };
+
+	auto& sh_leftWinding = s2.get<primitive::Shape>(shape_leftWinding);
+	RectView rect_leftWinding{ sh_leftWinding, vLeftWinding0, vLeftWinding1, vLeftWinding3, vLeftWinding2 };
+
+	auto& sh_rightWinding = s2.get<primitive::Shape>(shape_rightWinding);
+	RectView rect_rightWinding{ sh_rightWinding, vRightWinding0, vRightWinding1, vRightWinding3, vRightWinding2 };
+
+	auto& sh_proj = s2.get<primitive::Shape>(shape_proj);
+	RectView rect_proj{ sh_proj, vProj0, vProj1, vProj6, vProj4 };
+
+	auto& sh_leftThingy = s2.get<primitive::Shape>(shape_leftThingy);
+	RectView rect_leftThingy{ sh_leftThingy, vLeftThingy0, vLeftThingy1, vLeftThingy4, vLeftThingy3 };
+
+	auto& sh_rightThingy = s2.get<primitive::Shape>(shape_rightThingy);
+	RectView rect_rightThingy{ sh_rightThingy, vRightThingy0, vRightThingy1, vRightThingy3, vRightThingy2 };
+
 	std::shared_ptr<RectMeshView> mesh_base{ std::make_shared<RectMeshView>(rect_base) };
 	std::shared_ptr<RectMeshView> mesh_form0{ std::make_shared<RectMeshView>(rect_form0) };
+	std::shared_ptr<RectMeshView> mesh_leftTri{ std::make_shared<RectMeshView>(rect_leftTri) };
+	std::shared_ptr<RectMeshView> mesh_rightTri{ std::make_shared<RectMeshView>(rect_rightTri) };
+	std::shared_ptr<RectMeshView> mesh_quad{ std::make_shared<RectMeshView>(rect_quad) };
+	std::shared_ptr<RectMeshView> mesh_circle{ std::make_shared<RectMeshView>(rect_circle) };
+	std::shared_ptr<RectMeshView> mesh_leftWinding{ std::make_shared<RectMeshView>(rect_leftWinding) };
+	std::shared_ptr<RectMeshView> mesh_rightWinding{ std::make_shared<RectMeshView>(rect_rightWinding) };
+	std::shared_ptr<RectMeshView> mesh_proj{ std::make_shared<RectMeshView>(rect_proj) };
+	std::shared_ptr<RectMeshView> mesh_leftThingy{ std::make_shared<RectMeshView>(rect_leftThingy) };
+	std::shared_ptr<RectMeshView> mesh_rightThingy{ std::make_shared<RectMeshView>(rect_rightThingy) };
 
-	//globalMeshDrawer.draw(*mesh_form0);
 
-	MeshCombiner combiner{ RectMeshView(rect_base) };
-	combiner.SetCriterion<OnePointCriterion>();
+	globalMeshDrawer.draw(*mesh_form0);
+
+	//MeshCombiner combiner{ RectMeshView(rect_base) };
+	//combiner.SetCriterion<OnePointCriterion>();
+	//
+	//combiner.AddMesh(mesh_form0);
+	//MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
+	//size_t mode = 1;
+	//onSpacePress = ([&]()->void {
+	//	if (combiner.AdjustIteration(size, mode) == 0)
+	//		std::cout << "Mesh optimization complete" << std::endl;
+	//});
 	
-	combiner.AddMesh(mesh_form0);
-	MeshElementSizeIsoMaxEdgeLength size(mesh_form0->mesh());
-	size_t mode = 1;
-	onSpacePress = ([&]()->void {
-		if (combiner.AdjustIteration(size, mode) == 0)
-			std::cout << "Mesh optimization complete" << std::endl;
-	});
-	
-	globalMeshDrawer.draw(combiner);
+	//globalMeshDrawer.draw(combiner);
 	globalMeshDrawer.init();
 #endif
 
-#ifndef _testBSP
+#ifdef _testBSP
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting());
 	ls_1->setParameter("N", DoubleParameter(1));
 	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting());
-	ls_2->setParameter("N", DoubleParameter(15));
+	ls_2->setParameter("N", DoubleParameter(16));
 	ls_2->setParameter("q", DoubleParameter(1.));
 	SETTINGHANDLE ls_3 = std::make_shared<LineSetting>(LineSetting());
-	ls_3->setParameter("N", DoubleParameter(15));
+	ls_3->setParameter("N", DoubleParameter(16));
 	ls_3->setParameter("q", DoubleParameter(1 / 1.));
 	SETTINGHANDLE ls_4 = std::make_shared<LineSetting>(LineSetting());
-	ls_4->setParameter("N", DoubleParameter(15));
+	ls_4->setParameter("N", DoubleParameter(16));
 	ls_4->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
@@ -312,7 +513,7 @@ void FemCadGeomTester::Launch()
 	});
 
 	globalMeshDrawer.draw(combiner);
-	//globalMeshDrawer.draw(*mesh_base);
+	//globalMeshDrawer.draw(*mesh_form0);
 	//globalMeshDrawer.draw(*rsh);
 
 	globalMeshDrawer.init();
@@ -347,8 +548,8 @@ void FemCadGeomTester::Launch()
 
 	std::cout << sh_form0.classify(vector3{});
 
-	GHANDLE v10 = Vertex(s, vs, { 1.1,0. ,0 }).getHandle();
-	GHANDLE v11 = Vertex(s, vs, { 1.9,0. ,0 }).getHandle();
+	GHANDLE v10 = Vertex(s, vs, { 1,0. ,0 }).getHandle();
+	GHANDLE v11 = Vertex(s, vs, { 2,0. ,0 }).getHandle();
 	GHANDLE v12 = Vertex(s, vs, { 2,1,0 }).getHandle();
 	GHANDLE v13 = Vertex(s, vs, { 1,1,0 }).getHandle();
 
@@ -360,7 +561,48 @@ void FemCadGeomTester::Launch()
 	GHANDLE shape_base = primitive::Shape(s, ps, s, { l10, l11, l12, l13 }).getHandle();
 	auto& sh_base = s.get<primitive::Shape>(shape_base);
 
-	auto& rsh = main_scene.get<primitive::Shape>(GeometryUtility::ApplyCSG(main_scene, CSGOperation::Union, sh_base, sh_form0));
+	auto& rsh = main_scene.get<primitive::Shape>(GeometryUtility::ApplyCSG(main_scene, CSGOperation::Union, sh_form0, sh_base));
+
+	globalCSGDrawer.draw(&rsh);
+	globalCSGDrawer.init();
+
+#endif
+
+#ifndef _BSP_cube
+	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
+	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting());
+	GHANDLE v0 = Vertex(s, vs, { -3,0,0 }).getHandle();
+	GHANDLE v1 = Vertex(s, vs, { 0,-3,0 }).getHandle();
+	GHANDLE v2 = Vertex(s, vs, { 3,0,0 }).getHandle();
+	GHANDLE v3 = Vertex(s, vs, { 0,3,0 }).getHandle();
+	GHANDLE c1 = Vertex(s, vs, { 0,0,0 }).getHandle();
+
+	GHANDLE l0 = EllipticSegment(s, ls_1, v0, v1, c1).getHandle();
+	GHANDLE l1 = EllipticSegment(s, ls_1, v1, v2, c1).getHandle();
+	GHANDLE l2 = EllipticSegment(s, ls_1, v2, v3, c1).getHandle();
+	GHANDLE l3 = EllipticSegment(s, ls_1, v3, v0, c1).getHandle();
+
+	GHANDLE shape_form0 = primitive::Shape(s, ps, s, { l0, l1, l2, l3 }).getHandle();
+	auto& sh_form0 = s.get<primitive::Shape>(shape_form0);
+
+	//std::cout << sh_form0.classify(vector3{});
+
+	GHANDLE v10 = Vertex(s, vs, { 1,-2. ,0 }).getHandle();
+	GHANDLE v11 = Vertex(s, vs, { 4,-5. ,0 }).getHandle();
+	GHANDLE v12 = Vertex(s, vs, { 7,-2,0 }).getHandle();
+	GHANDLE v13 = Vertex(s, vs, { 4,1,0 }).getHandle();
+	GHANDLE c2 = Vertex(s, vs, { 4,-2,0 }).getHandle();
+
+
+	GHANDLE l10 = EllipticSegment(s, ls_1, v10, v11, c2).getHandle();
+	GHANDLE l11 = EllipticSegment(s, ls_1, v11, v12, c2).getHandle();
+	GHANDLE l12 = EllipticSegment(s, ls_1, v12, v13, c2).getHandle();
+	GHANDLE l13 = EllipticSegment(s, ls_1, v13, v10, c2).getHandle();
+
+	GHANDLE shape_base = primitive::Shape(s, ps, s, { l10, l11, l12, l13 }).getHandle();
+	auto& sh_base = s.get<primitive::Shape>(shape_base);
+
+	auto& rsh = main_scene.get<primitive::Shape>(GeometryUtility::ApplyCSG(main_scene, CSGOperation::Union, sh_form0, sh_base));
 
 	globalCSGDrawer.draw(&rsh);
 	globalCSGDrawer.init();

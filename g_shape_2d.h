@@ -19,9 +19,9 @@ namespace fg {
 				// если уже есть bsp-дерево, то уничтожим его
 				if (bsp) bsp.reset();
 				// сложим в lines все объекты линий из геометрии shape
-				std::vector<ILine*> lines;
+				std::vector<Splitter<ILine>> lines;
 				for (auto i : geometry)
-					lines.emplace_back(&getConstContext().get<ILine>(i));
+					lines.push_back(Splitter<ILine>(getConstContext().get<ILine>(i), 0.0, 1.0));
 				// построим новое дерево BSP
 				bsp = std::make_unique<BSPTree<ILine>>(BSPTree<ILine>(lines));
 			}

@@ -32,7 +32,7 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 	}
 	// замкнутый ли полигон
 	for (auto i : vertexOwners) {
-		if (i.second != 2) 
+		if (i.second % 2) 
 			throw FGException("Error! Unclosed or non CSG polygon!");
 	}
 

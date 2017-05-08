@@ -132,7 +132,7 @@ namespace fg {
 				if (seconds > 0) result.push_back(i); continue;
 			}
 			if (op == CSGOperation::Intersect) {
-				if (seconds < 0) result.push_back(i); continue;
+				if (seconds <= 0) result.push_back(i); continue;
 			}
 		}
 
@@ -140,7 +140,7 @@ namespace fg {
 			auto c = resultContext.get<ILine>(i).middle();
 			int seconds = Shape0.classify(c);
 			if (op == CSGOperation::Union) {
-				if (seconds > 0) result.push_back(i); continue;
+				if (seconds >= 0) result.push_back(i); continue;
 			}
 			if (op == CSGOperation::Intersect || op == CSGOperation::Subtract) {
 				if (seconds < 0) result.push_back(i); continue;
