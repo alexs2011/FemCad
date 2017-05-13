@@ -3,11 +3,11 @@
 #include "g_criteria.h"
 
 namespace fg {
-	class MeshCombiner : public virtual IMeshView {
+	class MeshCombiner : public virtual IMeshGeometryView {
 	private:
 		MeshView2d base;
 		std::unique_ptr<ICriterion> criterion;
-		std::vector<std::shared_ptr<IMeshView>> meshes;
+		std::vector<std::shared_ptr<IGeometryView>> meshes;
 		// переменные для AdjustIteration
 		std::vector<size_t> edges_list;
 		std::vector<size_t> edges_list_new;
@@ -18,7 +18,7 @@ namespace fg {
 		virtual const size_t boundary_size() const { return base.boundary_size(); }
 		virtual const Mesh2& mesh() const { return base.mesh(); }
 		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const { return base.isBoundary(i); }
-		MeshCombiner(const IMeshView& base_mesh) : base{ base_mesh }, adjustMeshIter{} {}
+		MeshCombiner(const IMeshGeometryView& base_mesh) : base{ base_mesh }, adjustMeshIter{} {}
 		template<class Criterion>
 		void SetCriterion() {
 			criterion = (std::make_unique<Criterion>(Criterion{ base.mesh() }));
@@ -27,7 +27,7 @@ namespace fg {
 		void SetCriterion(P param) {
 			criterion = (std::make_unique<Criterion>(Criterion{ base.mesh(), param }));
 		}
-		void AddMesh(std::shared_ptr<IMeshView> _mesh) {
+		void AddMesh(std::shared_ptr<IGeometryView> _mesh) {
 			meshes.push_back(_mesh);
 
 			for (size_t i{}; i < meshes.back()->boundary_size(); i++) {
@@ -41,8 +41,7 @@ namespace fg {
 			base.AddLine(line);
 		}
 
-		template<class T>
-		void AdjustMeshInitialization(const IElementSize<T>& size)
+		void AdjustMeshInitialization()
 		{
 			adjustMeshIter = 0;
 			//i_flip = 0;
@@ -61,7 +60,7 @@ namespace fg {
 			std::chrono::high_resolution_clock::time_point last_end;
 			auto time = std::chrono::high_resolution_clock::now();
 
-			AdjustMeshInitialization(size);
+			AdjustMeshInitialization();
 			try {
 				size_t flag = 1;
 				while (flag)
@@ -275,18 +274,18 @@ namespace fg {
 			//return true;
 		}
 
-		void AddIntersectingMesh(std::shared_ptr<IMeshView> _mesh) {
-			meshes.push_back(_mesh);
+		//void AddIntersectingMesh(std::shared_ptr<IMeshView> _mesh) {
+		//	meshes.push_back(_mesh);
 
-			for (size_t i{}; i < meshes.back()->boundary_size(); i++) {
-				base.AddLine(meshes.back()->boundary(i));
-			}
-			for (size_t i{}; i < meshes.back()->mesh().edgesCount(); i++) {
-				auto e = meshes.back()->mesh().edge(i);
-				base.AddPoint(meshes.back()->mesh().point(e.first));
-				base.AddPoint(meshes.back()->mesh().point(e.second));
-			}
+		//	for (size_t i{}; i < meshes.back()->boundary_size(); i++) {
+		//		base.AddLine(meshes.back()->boundary(i));
+		//	}
+		//	for (size_t i{}; i < meshes.back()->mesh().edgesCount(); i++) {
+		//		auto e = meshes.back()->mesh().edge(i);
+		//		base.AddPoint(meshes.back()->mesh().point(e.first));
+		//		base.AddPoint(meshes.back()->mesh().point(e.second));
+		//	}
 
-		}
+		//}
 	};
 };

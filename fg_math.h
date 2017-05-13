@@ -173,6 +173,9 @@ namespace fg {
 		static vector3 Inf() {
 			return vector3(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
 		}
+		static vector3 Repeat(double v) {
+			return vector3{ v,v,v };
+		}
 		inline bool isNan() const {
 			return std::isnan(x) || std::isnan(y) || std::isnan(z);
 		}
@@ -180,6 +183,7 @@ namespace fg {
 			return std::isinf(x) || std::isinf(y) || std::isinf(z);
 		}
 	};
+
 
 	class FEMCADGEOMSHARED_EXPORT quaternion {
 	public:
@@ -789,7 +793,7 @@ namespace fg {
 					fl = evaluate(left);
 					continue;
 				}
-				if (fl < 1e-100) {
+				if (std::fabs(fl) < 1e-100) {
 					roots.push_back(round_eps(left, _EQ_EPS));
 					left = right;
 					fl = fr;
@@ -1633,5 +1637,9 @@ namespace fg {
 		}
 
 	};
+}
+
+namespace std {
+	fg::vector3 min(const fg::vector3& lhs, const fg::vector3& rhs);
 }
 

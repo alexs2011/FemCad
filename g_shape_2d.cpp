@@ -13,6 +13,7 @@
 fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lines_context, const std::vector<GHANDLE>& lines)
 	: Primitive(s, setting)
 {
+	if (lines.size() < 2) throw FGException("Bad shape. Not enough lines");
 	std::set<GHANDLE> verts;
 	std::multimap<GHANDLE, std::pair<GHANDLE, bool>> allLines;
 	std::map<GHANDLE, int> vertexOwners;
@@ -36,16 +37,17 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 			throw FGException("Error! Unclosed or non CSG polygon!");
 	}
 
+#ifdef FIX_POLYGONS
 	//
-	// Развернем все отрезки так, чтобы их направление обхода полигона совпадало
+	// Развернем все отрезки так, чтобы их направление обхода полигона было правильным
 	//
 	// выберем первый отрезок из добавляемых
 	GHANDLE last = lines[0];
 	// вытащим этот отрезок из изначальной сцены
-	ILine * ll = static_cast<ILine*>(lines_context.get_ptr(last));
 	// geometry.push_back(l1));
+	ILine * ll = static_cast<ILine*>(lines_context.get_ptr(last));
 	while (true) {
-		// для конца этого отрезка вытащим все пары номера этого отрезка и false/true ???
+		// для конца этого отрезка находим следующий отрезок, повторяем до тех пор, пока не достигнем замыкания
 		auto begin = allLines.lower_bound(ll->p1Handle());
 		auto end = allLines.upper_bound(ll->p1Handle());
 		for (auto i = begin; i != end; i++) {
@@ -74,7 +76,13 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 			ll->swapOrientation();
 		}
 	}
-
+#else
+	geometry = lines;
+	//for (auto i : lines) {
+	//	auto ll = static_cast<ILine*>(lines_context.get_ptr(i.second.first));
+	//	geometry.push_back(ll->getHandle());// ->copy(s));
+	//}
+#endif
 	addSelfToContext();
 }
 

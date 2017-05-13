@@ -1,36 +1,65 @@
 ﻿#pragma once
 #include "g_meshing.h"
 #include "g_line_ext.h"
-
+#include "g_element_size.h"
 namespace fg {
+	class IGeometryView {
+	public:
+		virtual const size_t boundary_size() const = 0;
+		virtual MeshedLine boundary(size_t index) const = 0;
+	};
+
 	class IMeshView
 	{
 	public:
 		size_t dbg_edge_to_be_processed = -1; // индекс ребра, которое будет обработано следующим
 	public:
-		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const = 0;
-		virtual const size_t boundary_size() const = 0;
 		virtual const Mesh2& mesh() const = 0;
-		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const = 0;
 		bool isToBeProcessed(Mesh2::EdgeIndex i) const
 		{
 			return i == dbg_edge_to_be_processed;
 		}
 	};
 
-	class RectMeshView : public virtual IMeshView {
+	class IMeshGeometryView : public virtual IGeometryView, public virtual IMeshView {
+	public:
+		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const = 0;
+	};
+
+	
+	
+	class MeshElementSizeView : public virtual ElementSize {
+	public:
+		using ElementSize::ElementSize;
+		template<class S, class... Targs>
+		void setIsoSize(Targs... args) {
+			static_assert(std::is_convertible<S, MeshElementSize<double>>, "Bad iso size parameter");
+			_isoSize = std::make_shared(S{ _mesh, args... });
+		}
+		template<class S, class... Targs>
+		void setAnisoSize(Targs... args) {
+			static_assert(std::is_convertible<S, MeshElementSize<vector3>>, "Bad aniso size parameter");
+			_anisoSize = std::make_shared(S{ _mesh, args... });
+		}
+	};
+
+	class ElementGeometry : public virtual IGeometryView, public virtual ElementSize{
+
+	};
+
+	class RectMeshView : public virtual IMeshGeometryView, public virtual MeshElementSizeView, public virtual ElementGeometry {
 		const RectView& rect;
 		Mesh2 _mesh;
 		std::vector<MeshedLine> _boundary;
 	public:
-		RectMeshView(const RectView& m) : rect{ m }, _mesh{ m.mesh() } {
+		RectMeshView(const RectView& m) : rect{ m }, _mesh{ m.mesh() }, MeshElementSizeView{ nullptr, nullptr } {
 			for (auto i : m.lines) {
 				for (auto j : i.lines) {
 					_boundary.push_back(j);
 				}
 			}
 		}
-		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {
+		virtual MeshedLine boundary(size_t index) const {
 			return _boundary[index];
 		}
 		virtual const size_t boundary_size() const {
@@ -45,7 +74,7 @@ namespace fg {
 		}
 	};
 	// базовая сетка, в которую будут добавляться вершины, линии, другие сетки
-	class FEMCADGEOMSHARED_EXPORT MeshView2d : public virtual IMeshView {
+	class FEMCADGEOMSHARED_EXPORT MeshView2d : public virtual IMeshGeometryView, public virtual MeshElementSizeView, public virtual ElementGeometry {
 		// коллекция линий геометрии
 		struct _meshLineView {
 			const ILine& line;
@@ -146,9 +175,11 @@ namespace fg {
 		}
 
 		inline void update_line(size_t geometry_index, vector3 point, std::vector<size_t>& edges) {
+
 			auto& line = geometry[geometry_index];
 			// локальная координата точки пересечения на линии line
 			double t = line.line.getParam(point);
+			if (t < -FG_EPS || t > 1.0 + FG_EPS) return;
 			// ребро сетки, лежащее на line, соответсвующее координате t
 			auto e = line.get(t);
 			// координата начала ребра e
@@ -203,7 +234,7 @@ namespace fg {
 			//return std::any_of(geometry.begin(), geometry.end(), [=](_meshLineView x)->bool {return x.pos.count(i) > 0; });
 		}
 
-		MeshView2d(const IMeshView& r) : _mesh(r.mesh())
+		MeshView2d(const IMeshGeometryView& r) : MeshElementSizeView{nullptr, nullptr}, _mesh(r.mesh())
 		{
 			std::map<Mesh2::Edge, Mesh2::EdgeIndex> edges;
 			_edgeGeometry.resize(_mesh.edgesCount());

@@ -11,7 +11,7 @@ void display(void);
 class MeshDrawer : public Drawer
 {
 private:
-	std::vector<const fg::IMeshView *> mesh_views;
+	std::vector<const fg::IMeshGeometryView *> mesh_views;
 public:
 
 	MeshDrawer() = default;
@@ -21,12 +21,12 @@ public:
 
 	~MeshDrawer() = default;
 
-	int draw(const fg::IMeshView& _mesh)
+	int draw(const fg::IMeshGeometryView& _mesh)
 	{
 		mesh_views.push_back(&_mesh);
 		return mesh_views.size() - 1;
 	}
-	const std::vector<const fg::IMeshView*>& getMeshViews() const
+	const std::vector<const fg::IMeshGeometryView*>& getMeshViews() const
 	{
 		return mesh_views;
 	}

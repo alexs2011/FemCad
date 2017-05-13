@@ -33,6 +33,9 @@ namespace fg {
 		inline virtual void intersect(const Splitter<Element>& line, std::vector<Splitter<Element>>& front, std::vector<Splitter<Element>>& back) {
 			std::vector<vector3> _, pl1;
 			auto res = Intersector<Element>::intersect_dynamic(_, pl1, curve, line.curve);
+			if (_special<Element>()) {
+				Intersector<Element>::intersect_line(line.curve, curve.P0(), curve.P1(), pl1);
+			}
 			std::set<double> params;
 			params.insert(line.t0);
 			params.insert(line.t1);

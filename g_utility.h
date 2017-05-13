@@ -4,7 +4,7 @@
 
 namespace fg {
 	class FEMCADGEOMSHARED_EXPORT GeometryUtility {
-		using Lookup = lookup_tree<2, GHANDLE>;
+		using Lookup = lookup_tree<2, ILine*>;
 	public:
 		static bool isConvex(const Scene& context, const std::vector<GHANDLE>& geometry) {
 			int side = 0;
@@ -19,6 +19,28 @@ namespace fg {
 			}
 			return true;
 		}
+		static void subdivideLineSetting(const SETTINGHANDLE& base_setting, double t, SETTINGHANDLE& left, SETTINGHANDLE& right) {
+			if (t < -FG_EPS || t > 1.0 + FG_EPS) throw FGException("Line setting subdivision problem. 't' is out of bounds.");
+			if (t < FG_EPS) {
+				left = nullptr; right = base_setting; return;
+			}
+			if (t > 1.0 - FG_EPS) {
+				left = base_setting;  right = nullptr; return;
+			}
+			try {
+				auto N = (int)base_setting->getParameter<DoubleParameter>("N");
+				auto q = base_setting->getParameter<DoubleParameter>("q");
+
+				auto n = std::fabs(q - 1.0) < FG_EPS ? std::max(1, (int)(t * N)) : std::max(1, (int)std::floor(std::log(t * (std::pow(q, (double)N) - 1) + 1) / std::log(q)));
+				left = base_setting->copy();
+				left->setParameter("N", DoubleParameter(n));
+				right = base_setting->copy();
+				right->setParameter("N", DoubleParameter(std::max(1, N - n)));
+			}
+			catch (const FGException& ex) {
+				return;
+			}
+		}
 		static double getArea(const Scene& context, const std::vector<GHANDLE>& lines) {
 			double sum = 0;
 			for (auto i : lines) {
@@ -28,6 +50,6 @@ namespace fg {
 			return sum;
 		}
 
-		static GHANDLE ApplyCSG(Scene& context, CSGOperation op, const Primitive& primitive0, const Primitive& primitive1);
+		static GHANDLE ApplyCSG(Scene& context, CSGOperation op, const Primitive& primitive0, const Primitive& primitive1, std::vector<GHANDLE>* v = nullptr);
 	};
 }

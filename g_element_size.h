@@ -12,6 +12,39 @@ namespace fg {
 		//virtual vector3 get_size_aniso(const vector3& point) const = 0;
 	};
 
+	template<class SizeType>
+	class IElementSizeView : public IElementSize<SizeType> {
+	public:
+		virtual SizeType get_size(const vector3& p) const {
+			return getSize(p, SizeType{});
+		}
+		virtual SizeType getSize(const vector3& p, SizeType x) const = 0;
+	};
+
+	class ElementSize : public IElementSizeView<double>, public IElementSizeView<vector3> {
+	protected:
+		std::shared_ptr<IElementSize<double>> _isoSize;
+		std::shared_ptr<IElementSize<vector3>> _anisoSize;
+	public:
+		template<class S, class... Targs>
+		void setIsoSize(Targs... args) {
+			_isoSize = std::make_shared(S{ args... });
+		}
+		template<class S, class... Targs>
+		void setAnisoSize(Targs... args) {
+			_anisoSize = std::make_shared(S{ args... });
+		}
+		ElementSize(std::shared_ptr<IElementSize<double>> iso = nullptr, std::shared_ptr<IElementSize<vector3>> aniso = nullptr) : _isoSize{ iso }, _anisoSize{ aniso } {}
+
+
+		virtual inline double getSize(const vector3& point, double) const {
+			return _isoSize ? _isoSize->get_size(point) : (_anisoSize ? _anisoSize->get_size(point).length() : 1e100);
+		}
+		virtual inline vector3 getSize(const vector3& point, vector3) const {
+			return _anisoSize ? _anisoSize->get_size(point) : vector3::Repeat(_isoSize ? _isoSize->get_size(point) : 1e100);
+		}
+	};
+
 	template<class S>
 	class LambdaElementSize : public IElementSize<S>
 	{
@@ -111,11 +144,11 @@ namespace fg {
 	class ComplexElementSize : public IElementSize<S>
 	{
 	protected:
-		std::vector<IElementSize<S>> collection;
+		std::vector<std::shared_ptr<IElementSize<S>>> collection;
 	public:
 		template<class It>
 		ComplexElementSize(It _esBegin, It _esEnd) : collection(_esBegin, _esEnd) {}
-		virtual S get_size(const vector3& point) const = 0;
+		//virtual S get_size(const vector3& point) const = 0;
 	};
 
 	template<class S>
@@ -125,7 +158,12 @@ namespace fg {
 		template<class It>
 		ComplexElementSizeMinimal(It _esBegin, It _esEnd) : ComplexElementSize<S>(_esBegin, _esEnd) {}
 		virtual S get_size(const vector3& point) const {
-			return std::min(collection.begin(), collection.end(), [&](const IElementSize<S>& e) { return e(point); });
+			auto i = collection.begin();
+			S min = (*i)->get_size(point);
+			for (++i; i != collection.end(); ++i) {
+				min = std::min(min, (*i)->get_size(point));
+			}
+			return min;
 		}
 	};
 

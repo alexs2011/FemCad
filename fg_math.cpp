@@ -30,3 +30,8 @@ namespace fg {
 		return vector3::Nan();
 	}
 }
+namespace std {
+	fg::vector3 min(const fg::vector3& lhs, const fg::vector3& rhs) {
+		return fg::vector3(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y), std::min(lhs.z, rhs.z));
+	}
+}
