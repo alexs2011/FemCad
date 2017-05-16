@@ -949,13 +949,13 @@ namespace fg {
 		}
 		inline vector3 center() const { return 0.5 * (min + max); }
 		inline bool itersect(const vector3& p) const {
-			return p.x >= min.x && p.y >= min.y && p.z >= min.z &&
-				p.x <= max.x && p.y <= max.y && p.z <= max.z;
+			return p.x > min.x - FG_EPS && p.y > min.y - FG_EPS && p.z > min.z - FG_EPS &&
+				p.x < max.x + FG_EPS && p.y < max.y + FG_EPS && p.z <= max.z + FG_EPS;
 		}
 
 		inline bool itersect(const rect& p) const {
-			return !(max.x < p.min.x || max.y < p.min.y || max.z < p.min.z ||
-				min.x > p.max.x || min.y > p.max.y || min.z > p.max.z);
+			return !(max.x < p.min.x - FG_EPS || max.y < p.min.y - FG_EPS || max.z < p.min.z - FG_EPS ||
+				min.x > p.max.x + FG_EPS || min.y > p.max.y + FG_EPS || min.z > p.max.z + FG_EPS);
 		}
 		template<int A>
 		inline int classify_by(double x) const {

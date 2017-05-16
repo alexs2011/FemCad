@@ -155,29 +155,49 @@ namespace fg {
 			std::vector<const ILine*> side[4];
 			// size_t side_points[4];
 			// getConstBoundary() возвращает геометрию
-			const auto& bnd = shape.getConstBoundary();
-			size_t i{};
-			// ищем в геометрии вершину, которая соотвествует p00
-			for (; i < bnd.size(); i++) {
-				const ILine& p = shape.getConstContext().get<const ILine>(bnd[i]);
-				//_boundary.emplace_back(MeshedLine{ p });
-				if (p.p0Handle() == p00) {
-					break;
-				}
+			const auto& pre_bnd = shape.getConstBoundary();
+			//size_t i{};
+			//// ищем в геометрии вершину, которая соотвествует p00
+			//for (; i < pre_bnd.size(); i++) {
+			//	const ILine& p = shape.getConstContext().get<const ILine>(pre_bnd[i]);
+			//	//_boundary.emplace_back(MeshedLine{ p });
+			//	if (p.p0Handle() == p00) {
+			//		break;
+			//	}
+			//}
+
+			std::map<GHANDLE, GHANDLE> bnd;
+			for (auto k : pre_bnd) {
+				const auto& p = shape.getConstContext().get<const ILine>(k);
+				bnd[p.p0Handle()] = k;
 			}
+			size_t current{};
+			auto l = bnd[p00];
+			const ILine* p = static_cast<const ILine*>(shape.getConstContext().get_ptr(l));
+
+			do{
+				if (p->p0Handle() == p01) current++;
+				if (p->p0Handle() == p10) current++;
+				if (p->p0Handle() == p11) current++;
+
+				side[current].emplace_back(p);
+				l = bnd[p->p1Handle()];
+				p = static_cast<const ILine*>(shape.getConstContext().get_ptr(l));
+			} while (p->p0Handle() != p00);
+
 			/*for (size_t j{i+1}; j < bnd.size(); j++) {
 				const ILine& p = shape.getConstContext().get<const ILine>(bnd[j]);
 				_boundary.emplace_back(MeshedLine{ p });
 			}*/
 			// идем по границе и начинаем заполнять противоположные границы геометрии (side) элементами геометрии, составляющими эти границы
-			size_t current{};
+			/*size_t current{};
 			for (size_t j{}; j < bnd.size(); j++) {
 				const ILine* p = static_cast<const ILine*>(shape.getConstContext().get_ptr(bnd[(i + j) % bnd.size()]));
 				if (p->p0Handle() == p01) current = 1;
 				if (p->p0Handle() == p11) current = 2;
 				if (p->p0Handle() == p10) current = 3;
 				side[current].emplace_back(p);
-			}
+			}*/
 			// перебираем все 4 границы и заполняем вектора параметров, т.е. разрядок для каждой границы
 			for (size_t j{}; j < 4; j++) {
 				lines.emplace_back(LineView{ side[j] });

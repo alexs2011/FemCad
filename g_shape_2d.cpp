@@ -33,7 +33,7 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 	}
 	// замкнутый ли полигон
 	for (auto i : vertexOwners) {
-		if (i.second % 2) 
+		if (i.second % 2)
 			throw FGException("Error! Unclosed or non CSG polygon!");
 	}
 
@@ -77,11 +77,24 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 		}
 	}
 #else
-	geometry = lines;
-	//for (auto i : lines) {
-	//	auto ll = static_cast<ILine*>(lines_context.get_ptr(i.second.first));
-	//	geometry.push_back(ll->getHandle());// ->copy(s));
-	//}
+	if (s != lines_context) {
+		std::map<GHANDLE, GHANDLE> new_verts;
+		for (auto i : verts) {
+			new_verts[i] = lines_context.get_ptr(i)->copy(s);
+		}
+		std::vector<GHANDLE> vx;
+		//geometry = lines;
+		for (auto i : lines) {
+			auto ll = static_cast<ILine*>(lines_context.get_ptr(i));
+			vx = ll->getChildren();
+
+			for (size_t j{}; j < vx.size(); ++j)
+				vx[j] = new_verts[vx[j]];
+			geometry.push_back(ll->createSame(s, ll->getSetting(), vx));
+		}
+	}
+	else
+		geometry = lines;
 #endif
 	addSelfToContext();
 }

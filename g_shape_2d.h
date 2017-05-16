@@ -8,12 +8,13 @@ namespace fg {
 		class FEMCADGEOMSHARED_EXPORT Shape : public Primitive, public IPrintable
 		{
 			std::unique_ptr<BSPTree<ILine>> bsp;
-		protected:
-			// для чего этот конструктор ???
+			// Конструктор формы из конкретных (корректных) линий
+		public:
 			Shape(Scene& s, const SETTINGHANDLE& setting, std::vector<GHANDLE>&& geom)
 				: Primitive(s, setting, geom) {
 				addSelfToContext();
 			}
+		protected:
 			void RebuildBSP()
 			{
 				// если уже есть bsp-дерево, то уничтожим его

@@ -168,7 +168,7 @@ namespace fg {
 					SETTINGHANDLE right = seg->getSetting();
 					SETTINGHANDLE left = seg->getSetting();
 					for (size_t j = 0U; j < i.second.size() - 1; j++) {
-						auto& p = resultContext.get<Vertex>(i.second[j + 1]);
+						auto& p = resultContext.get<Vertex>(i.second[j + !flip]);
 						auto t = i.first->getParam(p.position());
 						GeometryUtility::subdivideLineSetting(flip ? left : right, t, left, right);
 						result.push_back(LineSegment(resultContext, flip ? right : left, i.second[j + flip], i.second[j + !flip]).getHandle());
@@ -179,7 +179,7 @@ namespace fg {
 					SETTINGHANDLE right = segel->getSetting();
 					SETTINGHANDLE left = segel->getSetting();
 					for (size_t j = 0; j < i.second.size() - 1; j++) {
-						auto& p = resultContext.get<Vertex>(i.second[j + 1]);
+						auto& p = resultContext.get<Vertex>(i.second[j + !flip]);
 						auto t = i.first->getParam(p.position());
 						GeometryUtility::subdivideLineSetting(flip ? left : right, t, left, right);
 						result.push_back(EllipticSegment(resultContext, flip ? right : left, i.second[j + flip], i.second[j + !flip], points[Shape0.getConstContext().get<Vertex>(segel->centerHandle()).position()], segel->getCurve()).getHandle());
@@ -228,9 +228,9 @@ namespace fg {
 				}
 				if (op == CSGOperation::Union) {
 					if (seconds > 0) result.push_back(i); continue;
-					if (internal_boundary && seconds < 0) {
+					/*if (internal_boundary && seconds < 0) {
 						tmp_bnd.push_back(i);
-					}
+					}*/
 				}
 				if (op == CSGOperation::Subtract) {
 					if (seconds > 0) result.push_back(i); continue;
@@ -286,10 +286,10 @@ namespace fg {
 						continue;
 					}
 
-					if (seconds > 0) result.push_back(i); continue;
 					if (internal_boundary && seconds < 0) {
 						tmp_bnd.push_back(i);
 					}
+					if (seconds > 0) result.push_back(i); continue;
 				}
 				if (op == CSGOperation::Subtract) {
 					if (seconds > 0) result.push_back(i); continue;

@@ -22,7 +22,9 @@ namespace fg {
 		SETTINGHANDLE defaultLine;		//LineSetting defaultLine;
 		SETTINGHANDLE defaultCSG;		//GeometrySetting defaultCSG;
 		Scene();
-		void copy(Scene& s) const {} // TODO
+		void copy(Scene& s) const {
+			
+		} // TODO
 		TransformPtr getRootTransform() {
 			return TransformPtr(root);
 		}

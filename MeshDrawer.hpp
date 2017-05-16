@@ -3,6 +3,7 @@
 #include "g_meshing.h"
 #include "g_meshview.h"
 #include "Drawer.hpp"
+#include "fg_math.h"
 
 //extern double xChange, yChange, scale;
 
@@ -12,6 +13,7 @@ class MeshDrawer : public Drawer
 {
 private:
 	std::vector<const fg::IMeshGeometryView *> mesh_views;
+	std::vector<fg::vector3> colors;
 public:
 
 	MeshDrawer() = default;
@@ -21,14 +23,19 @@ public:
 
 	~MeshDrawer() = default;
 
-	int draw(const fg::IMeshGeometryView& _mesh)
+	int draw(const fg::IMeshGeometryView& _mesh, fg::vector3 color = fg::vector3{})
 	{
 		mesh_views.push_back(&_mesh);
+		colors.push_back(color);
 		return mesh_views.size() - 1;
 	}
 	const std::vector<const fg::IMeshGeometryView*>& getMeshViews() const
 	{
 		return mesh_views;
+	}
+	const std::vector<fg::vector3>& getColors() const
+	{
+		return colors;
 	}
 };
 
@@ -52,6 +59,7 @@ void display(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	auto& meshes = globalMeshDrawer.getMeshViews();
+	auto& colors = globalMeshDrawer.getColors();
 
 	// enable wire mode
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -64,7 +72,9 @@ void display(void)
 	glTranslatef(-xChange, -yChange, 0.0f);
 	glColor3d(0.0, 0.0, 0.0);
 	//double xMax = 0.0, xMin = 0.0, yMax = 0.0, yMin = 0.0;
-	for (auto meshview : meshes) {
+	//for (auto meshview : meshes) {
+	for (size_t i{}; i<meshes.size(); ++i){
+		auto& meshview = meshes[i];
 		const auto& _mesh = meshview->mesh();
 		for (size_t i = 0; i < _mesh.edgesCount(); ++i)
 		{
@@ -72,6 +82,7 @@ void display(void)
 			if (meshview->isBoundary(i))
 				glColor3f(1.0f, 0.2f, 0.2f);
 			else
+				//glColor3dv(colors[i].data);
 				glColor3f(0.2f, 0.2f, 0.2f);
 			if (meshview->isToBeProcessed(i))
 			{

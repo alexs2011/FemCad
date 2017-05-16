@@ -28,18 +28,18 @@ namespace fg {
 
 	
 	
-	class MeshElementSizeView : public virtual ElementSize {
+	class MeshElementSizeView : public virtual ElementSize, public virtual IMeshGeometryView {
 	public:
 		using ElementSize::ElementSize;
 		template<class S, class... Targs>
 		void setIsoSize(Targs... args) {
-			static_assert(std::is_convertible<S, MeshElementSize<double>>, "Bad iso size parameter");
-			_isoSize = std::make_shared(S{ _mesh, args... });
+			static_assert(std::is_convertible<S, MeshElementSize<double>>::value, "Bad iso size parameter");
+			_isoSize = std::make_shared<S>(mesh(), args...);
 		}
 		template<class S, class... Targs>
 		void setAnisoSize(Targs... args) {
-			static_assert(std::is_convertible<S, MeshElementSize<vector3>>, "Bad aniso size parameter");
-			_anisoSize = std::make_shared(S{ _mesh, args... });
+			static_assert(std::is_convertible<S, MeshElementSize<vector3>>::value, "Bad aniso size parameter");
+			_anisoSize = std::make_shared<S>(mesh(), args...);
 		}
 	};
 
@@ -767,6 +767,7 @@ namespace fg {
 			return false;
 		}
 		bool _DebugTest(int val = 0) {
+#ifdef TREE_CHECK
 			for (size_t i{}; i < _mesh.edgesCount(); ++i) {
 				if (isBoundary(i)) {
 					auto e = _mesh.edge(i);
@@ -805,6 +806,7 @@ namespace fg {
 			//})) return true;
 			//for (size_t i{}; i < _mesh.triangles.size(); ++i) {
 			//}
+#endif
 #ifdef _DEBUG__
 #define _point_edges_test
 #ifdef _point_edges_test
@@ -905,7 +907,7 @@ namespace fg {
 			if (_edgeGeometry[edge].size() > 1) return{};
 
 			if (isBoundary(edge)) {
-				
+
 
 				return{};
 			}
@@ -944,7 +946,7 @@ namespace fg {
 			//	throw "Sovsem beda";
 			//}
 			auto pt = _mesh.edge(edge).first;
-			if (pt == _mesh.pointsCount()-1) {
+			if (pt == _mesh.pointsCount() - 1) {
 				pt = _mesh.edge(edge).second;
 			}
 			auto w = _mesh.collapseWeight(edge);
@@ -982,7 +984,8 @@ namespace fg {
 					weight = 0.0;
 					if (!check_weight_intersection(_mesh.edge(edge).first, weight))
 						return{};
-				}else{
+				}
+				else {
 					return{};
 				}
 			}
@@ -1008,17 +1011,17 @@ namespace fg {
 			}
 			std::map<size_t, std::pair<std::vector<size_t>, size_t>> replaces;
 			auto replacer = [&](Mesh2::EdgeIndex old, Mesh2::EdgeIndex nw) {
-				if (replaces.count(nw)) return;
+				if (replaces.count(nw) || _edgeGeometry[old].size() == 0) return;
 				replaces[nw] = std::make_pair(std::move(_edgeGeometry[old]), old);
 			};
 
 			auto s = _mesh.collapseEdge(edge, replacer, weight);
 			bool collapsed = false;
 
-			for (auto i : replaces) {
-				_edgeGeometry[i.first] = std::move(i.second.first);
-				for (auto j : _edgeGeometry[i.first]) {
-					geometry[j].replace_edge(i.second.second, i.first);
+			for (auto i = replaces.begin(); i != replaces.end(); ++i) {
+				_edgeGeometry[i->first] = i->second.first; //std::move(
+				for (auto j : _edgeGeometry[i->first]) {
+					geometry[j].replace_edge(i->second.second, i->first);
 				}
 			}
 

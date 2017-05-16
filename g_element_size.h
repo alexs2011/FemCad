@@ -28,11 +28,11 @@ namespace fg {
 	public:
 		template<class S, class... Targs>
 		void setIsoSize(Targs... args) {
-			_isoSize = std::make_shared(S{ args... });
+			_isoSize = std::make_shared<S>(args... );
 		}
 		template<class S, class... Targs>
 		void setAnisoSize(Targs... args) {
-			_anisoSize = std::make_shared(S{ args... });
+			_anisoSize = std::make_shared<S>(args...);
 		}
 		ElementSize(std::shared_ptr<IElementSize<double>> iso = nullptr, std::shared_ptr<IElementSize<vector3>> aniso = nullptr) : _isoSize{ iso }, _anisoSize{ aniso } {}
 
@@ -115,9 +115,9 @@ namespace fg {
 		using MeshElementSize<double>::MeshElementSize;
 		MeshElementSizeIsoMaxEdgeLength(const MeshElementSizeIsoMaxEdgeLength&) = default;
 
-		virtual vector3 get_size_aniso(const vector3& point) const {
+		/*virtual vector3 get_size_aniso(const vector3& point) const {
 			return get_size(point);
-		}
+		}*/
 
 		// вычисляется размер элемента в точке point
 		// возвращает взвешенный размер элемента на треугольнике
