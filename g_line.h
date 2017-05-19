@@ -96,7 +96,9 @@ namespace fg {
 		virtual void sortAlong(std::vector<std::pair<vector3, GHANDLE>>& v) const {
 			auto t = getTangent();
 			auto p0 = P0();
-			std::function<double(vector3)> f = [&](vector3 x) {return t & (x - p0); };
+			std::function<double(vector3)> f = [&](vector3 x) {
+				return getParam(x);//t & (x - p0); 
+			};
 			std::sort(std::begin(v), std::end(v), [=](std::pair<vector3, GHANDLE> x, std::pair<vector3, GHANDLE> y)->bool {
 #ifdef _DEBUG
 				auto p = f(x.first);
@@ -303,9 +305,10 @@ namespace fg {
 			double beg = std::atan2(_p0.y - c.y, _p0.x - c.x);
 			double end = std::atan2(_p1.y - c.y, _p1.x - c.x);
 			std::function<double(vector3)> f = [&](vector3 y) {
-				double x = std::atan2(y.y - c.y, y.x - c.x);
-				x = x - beg;
-				return x >= PI ? x - 2 * PI : (x < -PI ? x + 2 * PI : x); };
+				//double x = std::atan2(y.y - c.y, y.x - c.x);
+				//x = x - beg;
+				return getParam(y);//x >= PI ? x - 2 * PI : (x < -PI ? x + 2 * PI : x); 
+			};
 			std::sort(std::begin(v), std::end(v), [=](std::pair<vector3, GHANDLE > x, std::pair<vector3, GHANDLE> y)->bool {
 				return f(x.first) < f(y.first);
 			});

@@ -76,7 +76,7 @@ namespace fg {
 
 			plane pl0 = plane::byTwoPointsAndNormal(l0p0, l0p1, vector3(0.0, 0.0, 1.0));
 			bool first = pl0.classify(l1p0) != pl0.classify(l1p1);
-			if ((l0.getTangent() ^ (l1p1 - l1p0)).lengthSq() < FG_EPS)
+			if ((l0.getTangent().getNormalized() ^ (l1p1 - l1p0).getNormalized()).lengthSq() < FG_EPS)
 			{
 				if (pl0.classify(l1p0) == 0) {
 					if (l0p0 < l0p1) {
@@ -417,7 +417,7 @@ namespace fg {
 
 			plane pl0 = plane::byTwoPointsAndNormal(l0p0, l0p1, vector3(0.0, 0.0, 1.0));
 			bool first = pl0.classify(l1p0) != pl0.classify(l1p1);
-			if ((l0.getTangent() ^ l1.getTangent()).lengthSq() < FG_EPS) {
+			if ((l0.getTangent().getNormalized() ^ l1.getTangent().getNormalized()).lengthSq() < FG_EPS) {
 				if (pl0.classify(l1p0) == 0) {
 					if (l0p0 < l0p1) {
 						if (l1p0 < l1p1) {

@@ -95,6 +95,9 @@ fg::primitive::Shape::Shape(Scene & s, const SETTINGHANDLE& setting, Scene & lin
 	}
 	else
 		geometry = lines;
+
+	auto a = GeometryUtility::getArea(lines_context, lines);
+
 #endif
 	addSelfToContext();
 }

@@ -125,13 +125,29 @@ void FemCadGeomTester::Launch()
 #endif // !_testCurve
 #ifndef _magnit
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
+	SETTINGHANDLE ps_air = std::make_shared<GeometrySetting>(GeometrySetting());
+	SETTINGHANDLE ps_coil_lft = std::make_shared<GeometrySetting>(GeometrySetting());
+	SETTINGHANDLE ps_coil_rgt = std::make_shared<GeometrySetting>(GeometrySetting());
+	SETTINGHANDLE ps_shim = std::make_shared<GeometrySetting>(GeometrySetting());
 
 	SETTINGHANDLE ls_base = std::make_shared<LineSetting>(LineSetting());
 	ls_base->setParameter("N", DoubleParameter(1));
 	ls_base->setParameter("q", DoubleParameter(1));
 
+	SETTINGHANDLE ls_air_bottom = std::make_shared<LineSetting>(LineSetting());
+	ls_air_bottom->setParameter("N", DoubleParameter(10));
+	ls_air_bottom->setParameter("q", DoubleParameter(1));
+
+	SETTINGHANDLE ls_air_side_r = std::make_shared<LineSetting>(LineSetting());
+	ls_air_side_r->setParameter("N", DoubleParameter(10));
+	ls_air_side_r->setParameter("q", DoubleParameter(1.2));
+
+	SETTINGHANDLE ls_air_side_l = std::make_shared<LineSetting>(LineSetting());
+	ls_air_side_l->setParameter("N", DoubleParameter(10));
+	ls_air_side_l->setParameter("q", DoubleParameter(1/1.2));
+
 	SETTINGHANDLE ls_cut_circle = std::make_shared<LineSetting>(LineSetting());
-	ls_cut_circle->setParameter("N", DoubleParameter(3));
+	ls_cut_circle->setParameter("N", DoubleParameter(5));
 	ls_cut_circle->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting()); // bound 1
@@ -188,11 +204,11 @@ void FemCadGeomTester::Launch()
 	ls_12->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_13 = std::make_shared<LineSetting>(LineSetting()); // bound 2
-	ls_13->setParameter("N", DoubleParameter(3));
+	ls_13->setParameter("N", DoubleParameter(1));
 	ls_13->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_14 = std::make_shared<LineSetting>(LineSetting()); // bound 2
-	ls_14->setParameter("N", DoubleParameter(3));
+	ls_14->setParameter("N", DoubleParameter(2));
 	ls_14->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_15 = std::make_shared<LineSetting>(LineSetting()); // bound 2
@@ -214,10 +230,10 @@ void FemCadGeomTester::Launch()
 	GHANDLE vTank2 = Vertex(s, vs, { 1., 1.,0 }).getHandle();
 	GHANDLE vTank3 = Vertex(s, vs, { -1.,1.,0 }).getHandle();
 
-	GHANDLE lTank0 = LineSegment(s, ls_base, vTank0, vTank1).getHandle();
-	GHANDLE lTank1 = LineSegment(s, ls_base, vTank1, vTank2).getHandle();
-	GHANDLE lTank2 = LineSegment(s, ls_base, vTank2, vTank3).getHandle();
-	GHANDLE lTank3 = LineSegment(s, ls_base, vTank3, vTank0).getHandle();
+	GHANDLE lTank0 = LineSegment(s, ls_air_bottom, vTank0, vTank1).getHandle();
+	GHANDLE lTank1 = LineSegment(s, ls_air_side_r, vTank1, vTank2).getHandle();
+	GHANDLE lTank2 = LineSegment(s, ls_air_bottom, vTank2, vTank3).getHandle();
+	GHANDLE lTank3 = LineSegment(s, ls_air_side_l, vTank3, vTank0).getHandle();
 
 	GHANDLE v0 = Vertex(s2, vs, { -0.2935,0,0 }).getHandle();
 	GHANDLE v1 = Vertex(s2, vs, { -0.5015,0,0 }).getHandle();
@@ -240,8 +256,8 @@ void FemCadGeomTester::Launch()
 	GHANDLE v18 = Vertex(s2, vs, { -0.18,0.157,0 }).getHandle();
 	GHANDLE v19 = Vertex(s2, vs, { -0.2935,0.157,0 }).getHandle();
 
-	GHANDLE l0 =  LineSegment(s2, ls_1 , v1 , v0 ).getHandle(); // bound 1
-	GHANDLE l1 =  LineSegment(s2, ls_2 , v2 , v1 ).getHandle(); // bound 2 part 1 |
+	GHANDLE l0 =  LineSegment(s2, ls_1, v1 , v0 ).getHandle(); // bound 1
+	GHANDLE l1 =  LineSegment(s2, ls_2, v2 , v1 ).getHandle(); // bound 2 part 1 |
 	GHANDLE l2 =  LineSegment(s2, ls_3 , v3 , v2 ).getHandle(); // bound 2 part 1 /
 	GHANDLE l3 =  LineSegment(s2, ls_4 , v4 , v3 ).getHandle(); // bound 2 part 1 -
 	GHANDLE l4 =  LineSegment(s2, ls_5 , v5 , v4 ).getHandle(); // bound 2 part 1 -
@@ -286,8 +302,8 @@ void FemCadGeomTester::Launch()
 	// cut quadrangle
 	GHANDLE vQuad0 = Vertex(s2, vs, { -0.005,0.34,0 }).getHandle();
 	GHANDLE vQuad1 = Vertex(s2, vs, { 0.005,0.34,0 }).getHandle();
-	GHANDLE vQuad2 = Vertex(s2, vs, { 0.005,0.35,0 }).getHandle();
-	GHANDLE vQuad3 = Vertex(s2, vs, { -0.005,0.35,0 }).getHandle();
+	GHANDLE vQuad2 = Vertex(s2, vs, { 0.005,0.4,0 }).getHandle();
+	GHANDLE vQuad3 = Vertex(s2, vs, { -0.005,0.4,0 }).getHandle();
 
 	GHANDLE lQuad0 = LineSegment(s2, ls_base, vQuad0, vQuad1).getHandle();
 	GHANDLE lQuad1 = LineSegment(s2, ls_base, vQuad1, vQuad2).getHandle();
@@ -397,10 +413,10 @@ void FemCadGeomTester::Launch()
 
 
 	//GHANDLE lRightThingy1 = EllipticSegment(s2, ls_base, vRightThingy1, vRightThingy2, vProjCenterR).getHandle();
-	GHANDLE lRightThingy0 = LineSegment(s2, ls_base, vRightThingy1, vRightThingy0).getHandle();
-	GHANDLE lRightThingy1 = LineSegment(s2, ls_base, vRightThingy2, vRightThingy1).getHandle();
-	GHANDLE lRightThingy2 = LineSegment(s2, ls_base, vRightThingy3, vRightThingy2).getHandle();
-	GHANDLE lRightThingy3 = LineSegment(s2, ls_base, vRightThingy0, vRightThingy3).getHandle();
+	GHANDLE lRightThingy0 = LineSegment(s2, ls_base, vRightThingy0, vRightThingy1).getHandle();
+	GHANDLE lRightThingy1 = LineSegment(s2, ls_base, vRightThingy1, vRightThingy2).getHandle();
+	GHANDLE lRightThingy2 = LineSegment(s2, ls_base, vRightThingy2, vRightThingy3).getHandle();
+	GHANDLE lRightThingy3 = LineSegment(s2, ls_base, vRightThingy3, vRightThingy0).getHandle();
 	//GHANDLE lRightThingy4 = LineSegment(s2, ls_base, vRightThingy4, vRightThingy0).getHandle();
 
 		
@@ -470,8 +486,9 @@ void FemCadGeomTester::Launch()
 	std::shared_ptr<RectMeshView> mesh_rightThingy{ std::make_shared<RectMeshView>(rect_rightThingy) };
 
 
-	//globalMeshDrawer.draw(*mesh_proj);
-
+	//globalMeshDrawer.draw(*mesh_tank);
+	//globalMeshDrawer.init();
+	
 	MeshCombiner combiner{ RectMeshView(rect_base) };
 	//combiner.SetCriterion<OnePointCriterion>();
 	//
@@ -502,17 +519,31 @@ void FemCadGeomTester::Launch()
 		//std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_tank), CSGOperation::Union),
 		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_form0), CSGOperation::Union),
 		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_proj), CSGOperation::Union),
-		//std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_leftTri), CSGOperation::Subtract),
-		//std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_rightTri), CSGOperation::Subtract),
-		//std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_quad), CSGOperation::Union),
+		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_leftTri), CSGOperation::Subtract),
+		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_rightTri), CSGOperation::Subtract),
+		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_quad), CSGOperation::Subtract),
 		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_circle), CSGOperation::Subtract)
 	};
 	
-	std::shared_ptr<CSG> csg = std::make_shared<CSG>(ps, els);
+	std::shared_ptr<CSG> csg0 = std::make_shared<CSG>(ps, els);
+	std::vector<std::pair<std::shared_ptr<ElementGeometry>, CSGOperation>> els1 = {
+		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_rightThingy), CSGOperation::Union),
+		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_leftThingy), CSGOperation::Union)
+	};
+	std::shared_ptr<CSG> csg1 = std::make_shared<CSG>(ps_shim, els1);
 	
+	std::vector<std::tuple<std::shared_ptr<ElementGeometry>, CSGOperation, SETTINGHANDLE>> els2 = {
+		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(mesh_tank), CSGOperation::Union, ps_air),
+		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(csg0), CSGOperation::Subtract, ps),
+		//std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(csg1), CSGOperation::Subtract, ps_shim)
+	};
+	std::shared_ptr<CSG> csg = std::make_shared<CSG>(els2);
+
 	csg->setIsoSize<LambdaElementSize<double>>([](const vector3&) {return 0.5f; });
 
 	combiner.AddMesh(csg);
+
+	//combiner.AdjustMesh((IElementSize<double>&)*csg);
 
 	combiner.AdjustMeshInitialization();
 	size_t mode = 1;

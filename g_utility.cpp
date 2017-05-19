@@ -59,11 +59,11 @@ namespace fg {
 		std::set<ILine*> boundaryLines;
 		if (internal_boundary) {
 			for (size_t i = 0; i < internal_boundary->size(); i++) {
-				auto line = dynamic_cast<ILine*>(context.get_ptr((*internal_boundary)[i]));
+				auto line = dynamic_cast<ILine*>(primitive0.getConstContext().get_ptr((*internal_boundary)[i]));
 				boundaryLines.insert(line);
 				for (auto j : line->getChildren()) {
 					// перенос точек на новый контекст
-					auto& point = context.get<Vertex>(j).position();
+					auto& point = primitive0.getConstContext().get<Vertex>(j).position();
 					// если уже добавлена, не добавлять
 					if (points.count(point) == 0) {
 						points[point] = Vertex(resultContext, resultContext.defaultVertex, point).getHandle();
@@ -168,10 +168,13 @@ namespace fg {
 					SETTINGHANDLE right = seg->getSetting();
 					SETTINGHANDLE left = seg->getSetting();
 					for (size_t j = 0U; j < i.second.size() - 1; j++) {
-						auto& p = resultContext.get<Vertex>(i.second[j + !flip]);
+						auto& p = resultContext.get<Vertex>(i.second[j + 1]);
 						auto t = i.first->getParam(p.position());
-						GeometryUtility::subdivideLineSetting(flip ? left : right, t, left, right);
-						result.push_back(LineSegment(resultContext, flip ? right : left, i.second[j + flip], i.second[j + !flip]).getHandle());
+						GeometryUtility::subdivideLineSetting(right, t, left, right);
+						if (left == nullptr) {
+							std::cout << "ASDASD";
+						}
+						result.push_back(LineSegment(resultContext, left, i.second[j + flip], i.second[j + !flip]).getHandle());
 					}
 				}
 				auto segel = dynamic_cast<const EllipticSegment*>(i.first);
@@ -179,10 +182,13 @@ namespace fg {
 					SETTINGHANDLE right = segel->getSetting();
 					SETTINGHANDLE left = segel->getSetting();
 					for (size_t j = 0; j < i.second.size() - 1; j++) {
-						auto& p = resultContext.get<Vertex>(i.second[j + !flip]);
+						auto& p = resultContext.get<Vertex>(i.second[j + 1]);
 						auto t = i.first->getParam(p.position());
-						GeometryUtility::subdivideLineSetting(flip ? left : right, t, left, right);
-						result.push_back(EllipticSegment(resultContext, flip ? right : left, i.second[j + flip], i.second[j + !flip], points[Shape0.getConstContext().get<Vertex>(segel->centerHandle()).position()], segel->getCurve()).getHandle());
+						GeometryUtility::subdivideLineSetting(right, t, left, right);
+						if (left == nullptr) {
+							std::cout << "ASDASD";
+						}
+						result.push_back(EllipticSegment(resultContext, left, i.second[j + flip], i.second[j + !flip], points[Shape0.getConstContext().get<Vertex>(segel->centerHandle()).position()], segel->getCurve()).getHandle());
 					}
 				}
 			}
@@ -192,12 +198,12 @@ namespace fg {
 
 		func(lines_bnd, points_on_bounds, false);
 
-		std::map<std::pair<GHANDLE, GHANDLE>, size_t> lines1_map;// , lines0_map;
+		std::map<std::pair<GHANDLE, GHANDLE>, size_t> lines1_map, lines0_map;
 
-		//for (size_t i{}; i < lines0.size(); ++i) {
-		//	auto& l = resultContext.get<ILine>(lines0[i]);
-		//	lines0_map[std::make_pair(l.p0Handle(), l.p1Handle())] = i;
-		//}
+		for (size_t i{}; i < lines0.size(); ++i) {
+			auto& l = resultContext.get<ILine>(lines0[i]);
+			lines0_map[std::make_pair(l.p0Handle(), l.p1Handle())] = i;
+		}
 		for (size_t i{}; i < lines1.size(); ++i) {
 			auto& l = resultContext.get<ILine>(lines1[i]);
 			lines1_map[std::make_pair(l.p0Handle(), l.p1Handle())] = i;
@@ -210,9 +216,9 @@ namespace fg {
 		std::vector<GHANDLE> tmp_bnd;
 
 		if (internal_boundary) {
-			for (auto i : *internal_boundary) {
-				context.remove(i);
-			}
+			/*for (auto i : *internal_boundary) {
+				internal_boundary_context->remove(i);
+			}*/
 			internal_boundary->clear();
 		}
 		if (!setting_difference) {
@@ -295,12 +301,18 @@ namespace fg {
 					if (seconds > 0) result.push_back(i); continue;
 				}
 				if (op == CSGOperation::Intersect) {
+					if (seconds == 0) {
+						if (lines1_map.count(std::make_pair(l.p1Handle(), l.p0Handle())))
+							result.push_back(i);
+						continue;
+					}
 					result.push_back(i); continue;
 				}
 			}
 
 			for (auto i : lines1) {
-				auto c = resultContext.get<ILine>(i).middle();
+				auto& l = resultContext.get<ILine>(i);
+				auto c = l.middle();
 				int seconds = Shape0.classify(c);
 				if (op == CSGOperation::Union) {
 					if (seconds > 0) result.push_back(i); continue;
@@ -309,11 +321,22 @@ namespace fg {
 					if (internal_boundary && seconds < 0) {
 						tmp_bnd.push_back(i);
 					}
+					if (seconds == 0) {
+						if (lines0_map.count(std::make_pair(l.p0Handle(), l.p1Handle())))
+							result.push_back(i);
+						if (lines0_map.count(std::make_pair(l.p1Handle(), l.p0Handle())))
+							tmp_bnd.push_back(i);
+						continue;
+					}
 					if (seconds > 0) result.push_back(i); continue;
 				}
 				if (op == CSGOperation::Intersect) {
 					if (internal_boundary && seconds < 0) {
 						tmp_bnd.push_back(i);
+					}
+					if (seconds == 0) {
+						if (lines0_map.count(std::make_pair(l.p0Handle(), l.p1Handle())))
+							result.push_back(i);
 					}
 					//if (seconds < 0) result.push_back(i); continue;
 				}
