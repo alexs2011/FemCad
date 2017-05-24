@@ -230,6 +230,7 @@ namespace fg {
 				if (seconds == 0) {
 					if (lines1_map.count(std::make_pair(l.p0Handle(), l.p1Handle())))
 						result.push_back(i);
+
 					continue;
 				}
 				if (op == CSGOperation::Union) {
@@ -289,6 +290,8 @@ namespace fg {
 					if (seconds == 0) {
 						if (lines1_map.count(std::make_pair(l.p0Handle(), l.p1Handle())))
 							result.push_back(i);
+						if (lines1_map.count(std::make_pair(l.p1Handle(), l.p0Handle())))
+							tmp_bnd.push_back(i);
 						continue;
 					}
 

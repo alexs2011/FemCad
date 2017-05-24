@@ -7,6 +7,8 @@ namespace fg {
 	public:
 		virtual const size_t boundary_size() const = 0;
 		virtual MeshedLine boundary(size_t index) const = 0;
+		virtual size_t materialId(const vector3& p)const { return 0xFFFFFFFF; }
+		virtual std::map<size_t, SETTINGHANDLE> listSettings() const { return{}; }
 	};
 
 	class IMeshView
@@ -24,10 +26,11 @@ namespace fg {
 	class IMeshGeometryView : public virtual IGeometryView, public virtual IMeshView {
 	public:
 		virtual inline bool isBoundary(Mesh2::EdgeIndex i) const = 0;
+		virtual size_t materialId(Mesh2::EdgeIndex p)const { return 0xFFFFFFFF; }
 	};
 
-	
-	
+
+
 	class MeshElementSizeView : public virtual ElementSize, public virtual IMeshGeometryView {
 	public:
 		using ElementSize::ElementSize;
@@ -43,7 +46,7 @@ namespace fg {
 		}
 	};
 
-	class ElementGeometry : public virtual IGeometryView, public virtual ElementSize{
+	class ElementGeometry : public virtual IGeometryView, public virtual ElementSize {
 
 	};
 
@@ -234,7 +237,15 @@ namespace fg {
 			//return std::any_of(geometry.begin(), geometry.end(), [=](_meshLineView x)->bool {return x.pos.count(i) > 0; });
 		}
 
-		MeshView2d(const IMeshGeometryView& r) : MeshElementSizeView{nullptr, nullptr}, _mesh(r.mesh())
+		virtual size_t materialId(Mesh2::EdgeIndex p)const {
+			if (_edgeGeometry[p].size() > 0) {
+				return geometry[_edgeGeometry[p][0]].line.getSetting()->getID();
+			}
+			return 0xFFFFFFFF;
+		}
+
+
+		MeshView2d(const IMeshGeometryView& r) : MeshElementSizeView{ nullptr, nullptr }, _mesh(r.mesh())
 		{
 			std::map<Mesh2::Edge, Mesh2::EdgeIndex> edges;
 			_edgeGeometry.resize(_mesh.edgesCount());
@@ -352,7 +363,7 @@ namespace fg {
 						fit_edge(e2, ee0, ee1);
 
 						geometry[int_index.back()].replace(t, e, ee0, ee1);
- 
+
 						//if (_mesh.edge(e0).first == indx || _mesh.edge(e0).second == indx)
 						//	geometry[int_index.back()].replace(t, e, e0, e1);
 						//else
@@ -448,7 +459,7 @@ namespace fg {
 					std::cout << "Add point post insert Edge\n";
 				}
 
-					
+
 				if (std::get<0>(out) >= _edgeGeometry.size()) _edgeGeometry.push_back({});
 				if (std::get<1>(out) >= _edgeGeometry.size() && std::get<1>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
 				if (std::get<2>(out) >= _edgeGeometry.size() && std::get<2>(out) != Mesh2::NotAnEdge) _edgeGeometry.push_back({});
@@ -637,7 +648,7 @@ namespace fg {
 			if (isBoundary(edge))
 				return;
 			//try {
-					
+
 				//std::pair<size_t, size_t> t;
 				//auto edges = _mesh.get_quadrangle_edges(edge, t);
 				//for (size_t i{}; i < edges.size(); ++i) {
@@ -688,7 +699,7 @@ namespace fg {
 				}
 
 				auto e = _mesh.flip(edge);
-				edges.insert(edges.end(),s.begin(),s.end());
+				edges.insert(edges.end(), s.begin(), s.end());
 			}
 			if (_DebugTest(-100)) {
 				std::cout << "Failed at end of Flip " << edge << std::endl;
@@ -757,15 +768,15 @@ namespace fg {
 						auto p = segmentIntersection(_mesh.points[e0.first], _mesh.points[e0.second], _mesh.points[e1.first], _mesh.points[e1.second]);
 						if (p.isInf() || p.isNan())
 							continue;
-						std::cout << "Intersection found: " << p <<std::endl;
+						std::cout << "Intersection found: " << p << std::endl;
 						return true;
 						//_mesh.
 					}
 				}
-			}
+	}
 #endif
 			return false;
-		}
+}
 		bool _DebugTest(int val = 0) {
 #ifdef TREE_CHECK
 			for (size_t i{}; i < _mesh.edgesCount(); ++i) {
@@ -819,7 +830,7 @@ namespace fg {
 				}
 			}
 #endif
-//#define _planar_triangles
+			//#define _planar_triangles
 #ifdef _planar_triangles
 			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
 				auto pts = _mesh.triangleVertices(i);
@@ -1041,9 +1052,9 @@ namespace fg {
 
 
 			if (_DebugTestIntersection(ep0, ets.first) || (ets.first != ets.second && _DebugTestIntersection(ep0, ets.second))) {
-  				throw "Ne Sovsem beda";
+				throw "Ne Sovsem beda";
 			}
-			return std::move( result );
+			return std::move(result);
 		}
 
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const {

@@ -1392,6 +1392,10 @@ namespace fg {
 		inline vector3 sample_edge(size_t edge, double w) const {
 			return points[edges[edge].first] * (1.0 - w) + points[edges[edge].second] * (w);
 		}
+		inline vector3 sample_triangle(size_t tri, const vector3& l) const {
+			return lcoords(tri) * l;
+		}
+
 		inline double edge_length(size_t edge) const {
 			return (points[edges[edge].first] - points[edges[edge].second]).length();
 		}

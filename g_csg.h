@@ -154,6 +154,31 @@ namespace fg {
 			return cast(point).second;
 		}
 
+		virtual size_t materialId(const vector3& p)const {
+			auto s = getSetting(p);
+			return s ? s->getID() : 0; 
+		}
+		virtual std::map<size_t, SETTINGHANDLE> listSettings() const {
+			std::map<size_t, SETTINGHANDLE> settings;
+			for (auto i : boundaries) {
+				auto s = i.line.getSetting();
+				try {
+					if (s->getParameterByName("Name") && settings.count(s->getID()))
+						settings[s->getID()] = s;
+				}
+				catch (const FGException&) {}
+			}
+			for (auto i : forms) {
+				auto s = i.first.first->get<primitive::Shape>(i.first.second).getSetting();
+				try {
+					if (s->getParameterByName("Name") && settings.count(s->getID()))
+						settings[s->getID()] = s;
+				}
+				catch (const FGException&) {}
+			}
+			return settings;
+		}
+
 		virtual MeshedLine boundary(size_t index) const {
 			return boundaries[index];
 		}

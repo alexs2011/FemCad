@@ -11,6 +11,8 @@ double xChange = 0.0, yChange = 0.0, scale = 1.0;
 bool started = false;
 
 std::function<void()> onSpacePress;
+std::function<void()> onWireframeToggle;
+std::function<void()> onExportPressed;
 class Drawer
 {
 private:
@@ -137,6 +139,12 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'u':
 		started = false;
+		break;
+	case 'w':
+		onWireframeToggle();
+		break;
+	case 'e':
+		onExportPressed();
 		break;
 	}
 

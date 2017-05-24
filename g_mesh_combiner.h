@@ -274,6 +274,78 @@ namespace fg {
 			//return true;
 		}
 
+		void export_msh(const std::string& file_name, const IGeometryView& materials) const {
+			std::ofstream file(file_name);
+			auto& _mesh = base.mesh();
+			file << "$MeshFormat\n2.2 0 8\n$EndMeshFormat\n";
+			file << "$PhysicalNames\n";
+			auto s = materials.listSettings();
+			std::map<size_t, size_t> remap;
+			size_t p{};
+			file << s.size() << "\n";
+			for (auto i : s) {
+				remap[p] = i.second->getID();
+				file << i.second->dim << ' ' << p << ' ' << std::string{ *i.second->getParameterByName("Name") };
+				p++;
+			}
+			file << "$EndPhysicalNames\n";
+
+			std::map<size_t, size_t> nodes;
+			std::map<size_t, std::pair<size_t, std::pair<size_t, size_t>>> edges;
+			std::map<size_t, std::pair<size_t, std::tuple<size_t, size_t, size_t>>> triangles;
+
+			p = 1U;
+			for (size_t i{}; i < _mesh.edgesCount(); ++i) {
+				auto s = base.materialId(i);
+				if (s == 0xFFFFFFFF) continue;
+				else {
+					edges[p] = std::make_pair(remap[s], _mesh.edge(i));
+					p++;
+				}
+			}
+			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
+				auto s = materials.materialId(_mesh.sample_triangle(i, fg::vector3{ .33333,.33333,.33333 }));
+				if (s == 0xFFFFFFFF) continue;
+				else {
+					auto a = _mesh.triangleVertices(i);
+					triangles[p] = std::make_pair(remap[s], a);
+					nodes[std::get<0>(a) + 1] = std::get<0>(a);
+					nodes[std::get<1>(a) + 1] = std::get<1>(a);
+					nodes[std::get<2>(a) + 1] = std::get<2>(a);
+					p++;
+				}
+			}
+
+
+			file << "$Nodes\n";
+			file << nodes.size() << std::endl;
+			for (auto i : nodes) {
+				auto& p = _mesh.point(i.second);
+				file << i.first << ' ' << p.x << ' ' << p.y << ' ' << p.z << std::endl;
+			}
+			file << "$EndNodes\n";
+			file << "$Elements\n";
+			file << edges.size() + triangles.size() << std::endl;
+
+			for (auto i : edges) {
+				file << i.first << ' ' << 1 << ' ' << 1 << ' ' 
+					<< i.second.first << ' ' 
+					<< i.second.second.first + 1 << ' ' << i.second.second.second + 1 << std::endl;
+			}
+			for (auto i : triangles) {
+				file << i.first << ' ' << 2 << ' ' << 1 << ' '
+					<< i.second.first 
+					<< ' ' << std::get<0>(i.second.second) + 1 
+					<< ' ' << std::get<1>(i.second.second) + 1 
+					<< ' ' << std::get<2>(i.second.second) + 1 
+					<< std::endl;
+			}
+
+			file << "$EndElements\n";
+			file.close();
+			std::cout << "End export\n";
+		}
+
 		//void AddIntersectingMesh(std::shared_ptr<IMeshView> _mesh) {
 		//	meshes.push_back(_mesh);
 

@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "femcadgeom_global.h"
 #include "fg_exception.h"
+#include <sstream>
 
 namespace fg {
 	class FEMCADGEOMSHARED_EXPORT ISetting;
@@ -25,6 +26,27 @@ namespace fg {
 		virtual operator std::string() const { return std::to_string(value); }
 		virtual operator double() const { return value; }
 	};
+	template<class Ty>
+	class FEMCADGEOMSHARED_EXPORT SettingParameter : public IParameter {
+		Ty value;
+	public:
+		inline SettingParameter(const Ty value) : value{ value } {}
+		virtual operator std::string() const { 
+			std::stringstream s;
+			s << value;
+			return s.str(); 
+		}
+		virtual operator Ty() const { return value; }
+	};
+	template<>
+	class FEMCADGEOMSHARED_EXPORT SettingParameter<std::string> : public IParameter {
+		std::string value;
+	public:
+		inline SettingParameter(const std::string value) : value{ value } {}
+		virtual operator std::string() const {
+			return value;
+		}
+	};
 
 	class FEMCADGEOMSHARED_EXPORT ISetting {
 	protected:
@@ -32,12 +54,14 @@ namespace fg {
 		int id;
 		std::map <std::string, std::shared_ptr<IParameter>> parameters;
 	public:
+		int dim = 0;
 		virtual ~ISetting() {}
 		ISetting() : id(ID++) { }
-		ISetting(const ISetting& s) : id(ID++), parameters(s.parameters) { }
+		ISetting(const ISetting& s) : id(ID++), parameters(s.parameters) { dim = s.dim; }
 		ISetting& operator=(const ISetting& s) {
 			id = ID++;
 			parameters = s.parameters;
+			dim = s.dim;
 			return *this;
 		}
 		virtual const IParameter* getParameterByName(const std::string& name) {
@@ -83,7 +107,7 @@ namespace fg {
 
 	class FEMCADGEOMSHARED_EXPORT VertexSetting : public ISetting {
 	public:
-		VertexSetting() :ISetting() { setup(); }
+		VertexSetting() :ISetting() { setup(); dim = 0; }
 		VertexSetting(const VertexSetting& s) :ISetting(s) { }
 		virtual SETTINGHANDLE copy()const {
 			return std::make_shared<VertexSetting>(VertexSetting(*this));
@@ -94,7 +118,7 @@ namespace fg {
 	class FEMCADGEOMSHARED_EXPORT LineSetting : public ISetting {
 	public:
 		LineSetting() : ISetting() {
-			setup();
+			setup(); dim = 1;
 		}
 		LineSetting(const LineSetting& s) :ISetting(s) { }
 		virtual SETTINGHANDLE copy()const {
@@ -109,7 +133,7 @@ namespace fg {
 
 	class FEMCADGEOMSHARED_EXPORT GeometrySetting : public ISetting {
 	public:
-		GeometrySetting() : ISetting() { setup(); }
+		GeometrySetting() : ISetting() { setup(); dim = 2;}
 		GeometrySetting(const GeometrySetting& s) :ISetting(s) { }
 		virtual SETTINGHANDLE copy()const {
 			return std::make_shared<GeometrySetting>(GeometrySetting(*this));

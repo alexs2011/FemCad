@@ -125,93 +125,126 @@ void FemCadGeomTester::Launch()
 #endif // !_testCurve
 #ifndef _magnit
 	SETTINGHANDLE ps = std::make_shared<GeometrySetting>(GeometrySetting());
+	ps->addParameter("Name", SettingParameter<std::string>("Iron"));
 	SETTINGHANDLE ps_air = std::make_shared<GeometrySetting>(GeometrySetting());
+	ps_air->addParameter("Name", SettingParameter<std::string>("Air"));
+	SETTINGHANDLE ps_air_hole = std::make_shared<GeometrySetting>(GeometrySetting());
+	ps_air_hole->addParameter("Name", SettingParameter<std::string>("Air hole"));
 	SETTINGHANDLE ps_coil_lft = std::make_shared<GeometrySetting>(GeometrySetting());
+	ps_coil_lft->addParameter("Name", SettingParameter<std::string>("Coil left"));
 	SETTINGHANDLE ps_coil_rgt = std::make_shared<GeometrySetting>(GeometrySetting());
+	ps_coil_rgt->addParameter("Name", SettingParameter<std::string>("Coil right"));
 	SETTINGHANDLE ps_shim = std::make_shared<GeometrySetting>(GeometrySetting());
+	ps_shim->addParameter("Name", SettingParameter<std::string>("Shimm"));
 
 	SETTINGHANDLE ls_base = std::make_shared<LineSetting>(LineSetting());
 	ls_base->setParameter("N", DoubleParameter(1));
 	ls_base->setParameter("q", DoubleParameter(1));
 
+
+	SETTINGHANDLE ls_air_top = std::make_shared<LineSetting>(LineSetting());
+	ls_air_top->addParameter("Name", SettingParameter<std::string>("Zero value"));
+	ls_air_top->setParameter("N", DoubleParameter(10));
+	ls_air_top->setParameter("q", DoubleParameter(1));
+
 	SETTINGHANDLE ls_air_bottom = std::make_shared<LineSetting>(LineSetting());
+	ls_air_bottom->addParameter("Name", SettingParameter<std::string>("Zero flow"));
 	ls_air_bottom->setParameter("N", DoubleParameter(10));
 	ls_air_bottom->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_air_side_r = std::make_shared<LineSetting>(LineSetting());
+	ls_air_side_r->addParameter("Name", SettingParameter<std::string>("Zero value"));
 	ls_air_side_r->setParameter("N", DoubleParameter(10));
 	ls_air_side_r->setParameter("q", DoubleParameter(1.2));
 
 	SETTINGHANDLE ls_air_side_l = std::make_shared<LineSetting>(LineSetting());
+	ls_air_side_l->addParameter("Name", SettingParameter<std::string>("Zero value"));
 	ls_air_side_l->setParameter("N", DoubleParameter(10));
 	ls_air_side_l->setParameter("q", DoubleParameter(1/1.2));
 
 	SETTINGHANDLE ls_cut_circle = std::make_shared<LineSetting>(LineSetting());
+	ls_cut_circle->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_cut_circle->setParameter("N", DoubleParameter(5));
 	ls_cut_circle->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting()); // bound 1
+	ls_1->addParameter("Name", SettingParameter<std::string>("Zero flow"));
 	ls_1->setParameter("N", DoubleParameter(2));
 	ls_1->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_2 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 1 |
+	ls_2->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_2->setParameter("N", DoubleParameter(5));
 	ls_2->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_3 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 1 /
+	ls_3->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_3->setParameter("N", DoubleParameter(2));
 	ls_3->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_4 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 1 -
+	ls_4->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_4->setParameter("N", DoubleParameter(4));
 	ls_4->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_5 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 1 -
+	ls_5->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_5->setParameter("N", DoubleParameter(3));
 	ls_5->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_6 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 1 \"
+	ls_6->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_6->setParameter("N", DoubleParameter(2));
 	ls_6->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_7 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 1 -
+	ls_7->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_7->setParameter("N", DoubleParameter(3));
 	ls_7->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_8 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 2 |
+	ls_8->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_8->setParameter("N", DoubleParameter(7));
 	ls_8->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_9 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 2 -
+	ls_9->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_9->setParameter("N", DoubleParameter(6));
 	ls_9->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_10 = std::make_shared<LineSetting>(LineSetting()); // bound 2 part 2 -
+	ls_10->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_10->setParameter("N", DoubleParameter(6));
 	ls_10->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_winding = std::make_shared<LineSetting>(LineSetting());
+	ls_winding->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_winding->setParameter("N", DoubleParameter(6));
 	ls_winding->setParameter("q", DoubleParameter(1.));
 
 	//proj setting
 	SETTINGHANDLE ls_11 = std::make_shared<LineSetting>(LineSetting()); // bound 1 down
+	ls_11->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_11->setParameter("N", DoubleParameter(6));
 	ls_11->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_12 = std::make_shared<LineSetting>(LineSetting()); // bound 1 up
+	ls_12->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_12->setParameter("N", DoubleParameter(3));
 	ls_12->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_13 = std::make_shared<LineSetting>(LineSetting()); // bound 2
+	ls_13->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_13->setParameter("N", DoubleParameter(1));
 	ls_13->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_14 = std::make_shared<LineSetting>(LineSetting()); // bound 2
+	ls_14->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_14->setParameter("N", DoubleParameter(2));
 	ls_14->setParameter("q", DoubleParameter(1.));
 
 	SETTINGHANDLE ls_15 = std::make_shared<LineSetting>(LineSetting()); // bound 2
+	ls_15->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
 	ls_15->setParameter("N", DoubleParameter(3));
 	ls_15->setParameter("q", DoubleParameter(1.));
 
@@ -232,7 +265,7 @@ void FemCadGeomTester::Launch()
 
 	GHANDLE lTank0 = LineSegment(s, ls_air_bottom, vTank0, vTank1).getHandle();
 	GHANDLE lTank1 = LineSegment(s, ls_air_side_r, vTank1, vTank2).getHandle();
-	GHANDLE lTank2 = LineSegment(s, ls_air_bottom, vTank2, vTank3).getHandle();
+	GHANDLE lTank2 = LineSegment(s, ls_air_top, vTank2, vTank3).getHandle();
 	GHANDLE lTank3 = LineSegment(s, ls_air_side_l, vTank3, vTank0).getHandle();
 
 	GHANDLE v0 = Vertex(s2, vs, { -0.2935,0,0 }).getHandle();
@@ -521,8 +554,8 @@ void FemCadGeomTester::Launch()
 		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_proj), CSGOperation::Union),
 		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_leftTri), CSGOperation::Subtract),
 		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_rightTri), CSGOperation::Subtract),
-		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_quad), CSGOperation::Subtract),
-		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_circle), CSGOperation::Subtract)
+		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_circle), CSGOperation::Subtract),
+		std::make_pair(std::dynamic_pointer_cast<ElementGeometry>(mesh_quad), CSGOperation::Subtract)
 	};
 	
 	std::shared_ptr<CSG> csg0 = std::make_shared<CSG>(ps, els);
@@ -533,24 +566,34 @@ void FemCadGeomTester::Launch()
 	std::shared_ptr<CSG> csg1 = std::make_shared<CSG>(ps_shim, els1);
 	
 	std::vector<std::tuple<std::shared_ptr<ElementGeometry>, CSGOperation, SETTINGHANDLE>> els2 = {
-		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(mesh_tank), CSGOperation::Union, ps_air),
-		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(csg0), CSGOperation::Subtract, ps),
-		//std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(csg1), CSGOperation::Subtract, ps_shim)
+		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(csg0), CSGOperation::Union, ps),
+		//std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(mesh_circle), CSGOperation::Subtract, ps_air_hole),
+		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(csg1), CSGOperation::Union, ps_shim),
+		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(mesh_leftWinding), CSGOperation::Union, ps_coil_lft),
+		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(mesh_rightWinding), CSGOperation::Union, ps_coil_rgt),
+		std::make_tuple(std::dynamic_pointer_cast<ElementGeometry>(mesh_tank), CSGOperation::Union, ps_air)
 	};
 	std::shared_ptr<CSG> csg = std::make_shared<CSG>(els2);
+
 
 	csg->setIsoSize<LambdaElementSize<double>>([](const vector3&) {return 0.5f; });
 
 	combiner.AddMesh(csg);
-
-	//combiner.AdjustMesh((IElementSize<double>&)*csg);
-
-	combiner.AdjustMeshInitialization();
-	size_t mode = 1;
-	onSpacePress = ([&]()->void {
-		if (combiner.AdjustIteration((IElementSize<double>&)*csg, mode) == 0)
-			std::cout << "Mesh optimization complete" << std::endl;
-	});
+	bool use_runtime_mesh_building = true;
+	if (!use_runtime_mesh_building) {
+		combiner.AdjustMesh((IElementSize<double>&)*csg);
+		onSpacePress = ([&]()->void {});
+	}
+	else {
+		combiner.AdjustMeshInitialization();
+		size_t mode = 1;
+		onSpacePress = ([&]()->void {
+			if (combiner.AdjustIteration((IElementSize<double>&)*csg, mode) == 0)
+				std::cout << "Mesh optimization complete" << std::endl;
+		});
+	}
+	onWireframeToggle = [&]() -> void{ globalMeshDrawer.toggleWireframe(); };
+	onExportPressed = [&]() -> void { combiner.export_msh("test.msh", *csg.get()); };
 	//  mesh_base
 	//  mesh_tank
 	//  mesh_form0
@@ -579,7 +622,7 @@ void FemCadGeomTester::Launch()
 		globalMeshDrawer.draw(*mesh_rightThingy);
 	}
 	else {
-		globalMeshDrawer.draw(combiner);
+		globalMeshDrawer.draw(combiner, csg.get());
 	}
 	globalMeshDrawer.init();
 #endif
