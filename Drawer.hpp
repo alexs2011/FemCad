@@ -13,6 +13,7 @@ bool started = false;
 std::function<void()> onSpacePress;
 std::function<void()> onWireframeToggle;
 std::function<void()> onExportPressed;
+std::function<void()> onGeometryAdd;
 class Drawer
 {
 private:
@@ -31,7 +32,7 @@ public:
 	~Drawer() = default;
 
 public:
-	void init(void (*display) (void))
+	void init(void(*display) (void))
 	{
 		int argc = 0;
 		char **argv = NULL;
@@ -93,7 +94,7 @@ void set_perspective()
 	glLoadIdentity();
 	double xMin, xMax, yMin, yMax;
 	calcBoundaries(w, h, xChange, yChange, scale, xMin, xMax, yMin, yMax);
-	glOrtho(xMin, xMax, yMin, yMax, -2.0, 2.0);
+	glOrtho(-1, 1, -1, 1, -2.0, 2.0);
 }
 
 void processSpecialKeys(int key, int xx, int yy)
@@ -145,6 +146,9 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'e':
 		onExportPressed();
+		break;
+	case 'g':
+		onGeometryAdd();
 		break;
 	}
 

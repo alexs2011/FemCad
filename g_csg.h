@@ -163,15 +163,16 @@ namespace fg {
 			for (auto i : boundaries) {
 				auto s = i.line.getSetting();
 				try {
-					if (s->getParameterByName("Name") && settings.count(s->getID()))
+					if (s->getParameterByName("Name") && settings.count(s->getID()) == 0)
 						settings[s->getID()] = s;
+					
 				}
 				catch (const FGException&) {}
 			}
 			for (auto i : forms) {
 				auto s = i.first.first->get<primitive::Shape>(i.first.second).getSetting();
 				try {
-					if (s->getParameterByName("Name") && settings.count(s->getID()))
+					if (s->getParameterByName("Name") && settings.count(s->getID()) == 0)
 						settings[s->getID()] = s;
 				}
 				catch (const FGException&) {}

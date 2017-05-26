@@ -30,6 +30,8 @@ namespace fg {
 		void AddMesh(std::shared_ptr<IGeometryView> _mesh) {
 			meshes.push_back(_mesh);
 
+		}
+		void AddGeometry() {
 			for (size_t i{}; i < meshes.back()->boundary_size(); i++) {
 				base.AddLine(meshes.back()->boundary(i));
 			}
@@ -285,7 +287,7 @@ namespace fg {
 			file << s.size() << "\n";
 			for (auto i : s) {
 				remap[p] = i.second->getID();
-				file << i.second->dim << ' ' << p << ' ' << std::string{ *i.second->getParameterByName("Name") };
+				file << i.second->dim << ' ' << p << ' ' << std::string{ *i.second->getParameterByName("Name") } << std::endl;
 				p++;
 			}
 			file << "$EndPhysicalNames\n";

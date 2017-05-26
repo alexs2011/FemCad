@@ -674,6 +674,12 @@ namespace fg {
 				std::cout << "Failed at in of Flip " << edge << std::endl;
 				throw;
 			}
+			if (_mesh.flip_force(edge)) {
+				auto s = _mesh.get_quadrangle_edges(edge);
+				auto e = _mesh.flip(edge);
+				edges.insert(edges.end(), s.begin(), s.end());
+				return;
+			}
 			if (_mesh.flippable(edge, r)) {
 				std::vector<vector3> int_points;
 				auto s = _mesh.get_quadrangle_edges(edge);

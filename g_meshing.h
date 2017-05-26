@@ -1221,6 +1221,26 @@ namespace fg {
 			return e;
 		}
 
+		inline bool flip_force(EdgeIndex e) const {
+			auto vs = triangleVertices(edge_triangles[e].first);
+			auto edge = edges[e];
+			auto v = std::get<0>(vs) != edge.first && std::get<0>(vs) != edge.second ? std::get<0>(vs) :
+					(std::get<1>(vs) != edge.first && std::get<1>(vs) != edge.second ? std::get<1>(vs) : std::get<2>(vs));
+			auto t = points[edge.first] - points[edge.second];
+			auto vv = points[v] - points[edge.second];
+			if (std::fabs((t.getNormalized() ^ vv.getNormalized()).z) < FG_EPS) {
+				return true;
+			}
+			vs = triangleVertices(edge_triangles[e].second);
+			v = std::get<0>(vs) != edge.first && std::get<0>(vs) != edge.second ? std::get<0>(vs) :
+				(std::get<1>(vs) != edge.first && std::get<1>(vs) != edge.second ? std::get<1>(vs) : std::get<2>(vs));
+			vv = points[v] - points[edge.second];
+			if (std::fabs((t.getNormalized() ^ vv.getNormalized()).z) < FG_EPS) {
+				return true;
+			}
+			else { return false; }
+		}
+
 		inline bool flippable(EdgeIndex e, double r = 1.0) const {
 			auto pp0 = points[edges[e].first];
 			auto pp1 = points[edges[e].second];
@@ -1434,7 +1454,7 @@ namespace fg {
 		inline std::array<EdgeIndex, 4> get_quadrangle_edges(EdgeIndex e, std::pair<TriangleIndex, TriangleIndex>& t) {
 			t = edge_triangles[e];
 			if (t.first == t.second) throw;
-			std::array<EdgeIndex, 4> res;
+			std::array<EdgeIndex, 4> res{};
 			size_t i = 0;
 			auto addif = [&i, e, &res](size_t ind) {if (ind != e && ind != res[0] && ind != res[1] && ind != res[2] && ind != res[3]) res[i++] = ind; };
 			auto tri = triangles[t.first];

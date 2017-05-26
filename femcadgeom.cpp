@@ -144,27 +144,32 @@ void FemCadGeomTester::Launch()
 
 	SETTINGHANDLE ls_air_top = std::make_shared<LineSetting>(LineSetting());
 	ls_air_top->addParameter("Name", SettingParameter<std::string>("Zero value"));
-	ls_air_top->setParameter("N", DoubleParameter(10));
+	ls_air_top->setParameter("N", DoubleParameter(20));
 	ls_air_top->setParameter("q", DoubleParameter(1));
 
-	SETTINGHANDLE ls_air_bottom = std::make_shared<LineSetting>(LineSetting());
-	ls_air_bottom->addParameter("Name", SettingParameter<std::string>("Zero flow"));
-	ls_air_bottom->setParameter("N", DoubleParameter(10));
-	ls_air_bottom->setParameter("q", DoubleParameter(1));
+	SETTINGHANDLE ls_air_bottom1 = std::make_shared<LineSetting>(LineSetting());
+	ls_air_bottom1->addParameter("Name", SettingParameter<std::string>("Zero flow"));
+	ls_air_bottom1->setParameter("N", DoubleParameter(10));
+	ls_air_bottom1->setParameter("q", DoubleParameter(1.1));
+
+	SETTINGHANDLE ls_air_bottom2 = std::make_shared<LineSetting>(LineSetting());
+	ls_air_bottom2->addParameter("Name", SettingParameter<std::string>("Zero flow"));
+	ls_air_bottom2->setParameter("N", DoubleParameter(10));
+	ls_air_bottom2->setParameter("q", DoubleParameter(1/1.1));
 
 	SETTINGHANDLE ls_air_side_r = std::make_shared<LineSetting>(LineSetting());
 	ls_air_side_r->addParameter("Name", SettingParameter<std::string>("Zero value"));
-	ls_air_side_r->setParameter("N", DoubleParameter(10));
-	ls_air_side_r->setParameter("q", DoubleParameter(1.2));
+	ls_air_side_r->setParameter("N", DoubleParameter(20));
+	ls_air_side_r->setParameter("q", DoubleParameter(1.01));
 
 	SETTINGHANDLE ls_air_side_l = std::make_shared<LineSetting>(LineSetting());
 	ls_air_side_l->addParameter("Name", SettingParameter<std::string>("Zero value"));
-	ls_air_side_l->setParameter("N", DoubleParameter(10));
-	ls_air_side_l->setParameter("q", DoubleParameter(1/1.2));
+	ls_air_side_l->setParameter("N", DoubleParameter(20));
+	ls_air_side_l->setParameter("q", DoubleParameter(1/1.01));
 
 	SETTINGHANDLE ls_cut_circle = std::make_shared<LineSetting>(LineSetting());
 	ls_cut_circle->addParameter("Name", SettingParameter<std::string>("Internal boundary"));
-	ls_cut_circle->setParameter("N", DoubleParameter(5));
+	ls_cut_circle->setParameter("N", DoubleParameter(14));
 	ls_cut_circle->setParameter("q", DoubleParameter(1));
 
 	SETTINGHANDLE ls_1 = std::make_shared<LineSetting>(LineSetting()); // bound 1
@@ -248,10 +253,10 @@ void FemCadGeomTester::Launch()
 	ls_15->setParameter("N", DoubleParameter(3));
 	ls_15->setParameter("q", DoubleParameter(1.));
 
-	GHANDLE vBase0 = Vertex(s, vs, { -1.5,-0.5,0 }).getHandle();
-	GHANDLE vBase1 = Vertex(s, vs, { 1.5,-0.5,0 }).getHandle();
-	GHANDLE vBase2 = Vertex(s, vs, { 1.5, 1.5,0 }).getHandle();
-	GHANDLE vBase3 = Vertex(s, vs, { -1.5,1.5,0 }).getHandle();
+	GHANDLE vBase0 = Vertex(s, vs, { -1.02,-0.02,0 }).getHandle();
+	GHANDLE vBase1 = Vertex(s, vs, { 1.02,-0.02,0 }).getHandle();
+	GHANDLE vBase2 = Vertex(s, vs, { 1.02, 1.02,0 }).getHandle();
+	GHANDLE vBase3 = Vertex(s, vs, { -1.02,1.02,0 }).getHandle();
 
 	GHANDLE lBase0 = LineSegment(s, ls_base, vBase0, vBase1).getHandle();
 	GHANDLE lBase1 = LineSegment(s, ls_base, vBase1, vBase2).getHandle();
@@ -259,11 +264,13 @@ void FemCadGeomTester::Launch()
 	GHANDLE lBase3 = LineSegment(s, ls_base, vBase3, vBase0).getHandle();
 
 	GHANDLE vTank0 = Vertex(s, vs, { -1.,0.,0 }).getHandle();
+	GHANDLE vTankc = Vertex(s, vs, { 0.,0.,0 }).getHandle();
 	GHANDLE vTank1 = Vertex(s, vs, { 1.,0.,0 }).getHandle();
 	GHANDLE vTank2 = Vertex(s, vs, { 1., 1.,0 }).getHandle();
 	GHANDLE vTank3 = Vertex(s, vs, { -1.,1.,0 }).getHandle();
 
-	GHANDLE lTank0 = LineSegment(s, ls_air_bottom, vTank0, vTank1).getHandle();
+	GHANDLE lTank0a = LineSegment(s, ls_air_bottom1, vTank0, vTankc).getHandle();
+	GHANDLE lTank0b = LineSegment(s, ls_air_bottom2, vTankc, vTank1).getHandle();
 	GHANDLE lTank1 = LineSegment(s, ls_air_side_r, vTank1, vTank2).getHandle();
 	GHANDLE lTank2 = LineSegment(s, ls_air_top, vTank2, vTank3).getHandle();
 	GHANDLE lTank3 = LineSegment(s, ls_air_side_l, vTank3, vTank0).getHandle();
@@ -457,7 +464,7 @@ void FemCadGeomTester::Launch()
 
 
 	GHANDLE shape_base = primitive::Shape(s, ps, s, { lBase0, lBase1, lBase2, lBase3 }).getHandle();
-	GHANDLE shape_tank = primitive::Shape(s, ps, s, { lTank0, lTank1, lTank2, lTank3 }).getHandle();
+	GHANDLE shape_tank = primitive::Shape(s, ps, s, { lTank0a, lTank0b, lTank1, lTank2, lTank3 }).getHandle();
 	GHANDLE shape_form0 = primitive::Shape(s2, ps, s2, { l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19 }).getHandle();
 	GHANDLE shape_leftTri = primitive::Shape(s2, ps, s2, { lLeftTri0, lLeftTri1, lLeftTri2, lLeftTri3 }).getHandle();
 	GHANDLE shape_rightTri = primitive::Shape(s2, ps, s2, { lRightTri0, lRightTri1, lRightTri2, lRightTri3 }).getHandle();
@@ -594,6 +601,7 @@ void FemCadGeomTester::Launch()
 	}
 	onWireframeToggle = [&]() -> void{ globalMeshDrawer.toggleWireframe(); };
 	onExportPressed = [&]() -> void { combiner.export_msh("test.msh", *csg.get()); };
+	onGeometryAdd = [&]() -> void { combiner.AddGeometry(); };
 	//  mesh_base
 	//  mesh_tank
 	//  mesh_form0
