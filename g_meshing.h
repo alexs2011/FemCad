@@ -212,16 +212,27 @@ namespace fg {
 			if (tmin >= tmax - 1e-2) {
 				return std::make_pair(nan(""), nan(""));
 			}
-			std::cout << "((((" << tmin << ' ' << tmax << "))))\n";
+			//std::cout << "((((" << tmin << ' ' << tmax << "))))\n";
 			return std::make_pair(tmin, tmax); //0.5*(tmin + tmax);
 		}
-		inline std::array<EdgeIndex, 3> collapseEdge(EdgeIndex edge, std::function<void(EdgeIndex, EdgeIndex)> onEdgeReplace, double weight = 0.5) {
-			if (isnan(weight))
-				return{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge };
+		template<class T>
+		vector3 get_pos(Edge edge, T) {}
+		template<>
+		vector3 get_pos<double>(Edge e, double w) {
+			return (w * points[e.second] + (1.0 - w) * points[e.first]);
+		}
+		template<>
+		vector3 get_pos<vector3>(Edge e, vector3 w) { return w; }
 
-			if (weight < 0.0 || weight > 1.0) {
+
+		template<class T>
+		inline std::array<EdgeIndex, 3> collapseEdge(EdgeIndex edge, std::function<void(EdgeIndex, EdgeIndex, bool)> onEdgeReplace, T weight) {
+			//if (isnan(weight))
+			//	return{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge };
+
+			/*if (weight < 0.0 || weight > 1.0) {
 				throw "BEDAAAAA";
-			}
+			}*/
 
 			//if (isCorrect() == false) {
 			//	throw;
@@ -286,7 +297,7 @@ namespace fg {
 				edge_triangles[ot1].first == edge_triangles[et1].second)
 				return{ Mesh2::NotAnEdge, Mesh2::NotAnEdge, Mesh2::NotAnEdge };
 
-			auto pos = (weight * points[e.second] + (1.0 - weight) * points[e.first]);
+			auto pos = get_pos(e, weight);//(weight * points[e.second] + (1.0 - weight) * points[e.first]);
 
 			auto tt0i = edge_triangles[et0].first == tris.first ? edge_triangles[et0].second : edge_triangles[et0].first;
 			auto ott0i = edge_triangles[ot0].first == tris.first ? edge_triangles[ot0].second : edge_triangles[ot0].first;
@@ -361,17 +372,17 @@ namespace fg {
 			edge_triangles[et0] = std::make_pair(tt0i, ott0i);
 			edge_triangles[et1] = std::make_pair(tt1i, ott1i);
 
-			auto replace_edge = [&](size_t ot, size_t et, size_t tri) {
+			auto replace_edge = [&](size_t ot, size_t et, size_t tri, bool instant = false) {
 				if (std::get<0>(triangles[tri]) == ot)
 					std::get<0>(triangles[tri]) = et;
 				else if (std::get<1>(triangles[tri]) == ot)
 					std::get<1>(triangles[tri]) = et;
 				else if (std::get<2>(triangles[tri]) == ot)
 					std::get<2>(triangles[tri]) = et;
-				onEdgeReplace(ot, et);
+				onEdgeReplace(ot, et, instant);
 			};
-			replace_edge(ot0, et0, ott0i);
-			replace_edge(ot1, et1, ott1i);
+			replace_edge(ot0, et0, ott0i, true);
+			if(ot1 != ot0) replace_edge(ot1, et1, ott1i, true);
 
 			auto replace_edge_tri = [&](size_t ot, size_t et, size_t edg) {
 				if (edge_triangles[edg].first == ot) edge_triangles[edg].first = et;
@@ -399,14 +410,16 @@ namespace fg {
 
 			auto remove_edge = [&](size_t edg) {
 				auto last = edges.size() - 1;
+				point_edges[edges[last].first].erase(last);
+				point_edges[edges[last].second].erase(last);
 				if (edg != last) {
-					point_edges[edges[last].first].erase(last);
 					point_edges[edges[last].first].insert(edg);
-					point_edges[edges[last].second].erase(last);
 					point_edges[edges[last].second].insert(edg);
 
-					replace_edge(last, edg, edge_triangles[last].first);
-					replace_edge(last, edg, edge_triangles[last].second);
+					if(edge_triangles[last].first < triangles.size())
+						replace_edge(last, edg, edge_triangles[last].first);
+					if (edge_triangles[last].second < triangles.size())
+						replace_edge(last, edg, edge_triangles[last].second);
 
 					edges[edg] = edges.back();
 					edge_triangles[edg] = edge_triangles.back();
@@ -1077,27 +1090,34 @@ namespace fg {
 				if (test(*i, point, l)) {
 					size_t e0, e1, e2;
 					std::tie(e0, e1, e2) = triangleVertices(*i);
-					if (l.x < FG_EPS) {
-						if (l.y < FG_EPS) {
+
+					auto S = std::fabs(((points[e0] - points[e1]) ^ (points[e2] - points[e1])).z);
+					auto lx = S / (points[e1] - points[e2]).length();
+					auto ly = S / (points[e0] - points[e2]).length();
+					auto lz = S / (points[e1] - points[e0]).length();
+
+
+					if (l.x * lx < FG_EPS) {
+						if (l.y * ly< FG_EPS) {
 							result = e2;
 							return GeometryType::Vertex;
 						}
-						if (l.z < FG_EPS) {
+						if (l.z * lz < FG_EPS) {
 							result = e1;
 							return GeometryType::Vertex;
 						}
 						result = edgeIndex(*i, e1, e2);
 						return GeometryType::Edge;
 					}
-					if (l.y < FG_EPS) {
-						if (l.z < FG_EPS) {
+					if (l.y * ly < FG_EPS) {
+						if (l.z * lz < FG_EPS) {
 							result = e0;
 							return GeometryType::Vertex;
 						}
 						result = edgeIndex(*i, e2, e0);
 						return GeometryType::Edge;
 					}
-					if (l.z < FG_EPS) {
+					if (l.z * lz < FG_EPS) {
 						result = edgeIndex(*i, e0, e1);
 						return GeometryType::Edge;
 					}

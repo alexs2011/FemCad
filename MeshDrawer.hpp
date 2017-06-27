@@ -82,15 +82,15 @@ void display(void)
 	//double xMax = 0.0, xMin = 0.0, yMax = 0.0, yMin = 0.0;
 	//for (auto meshview : meshes) {
 	std::vector<fg::vector3> poly_colors{ fg::vector3(0.2, 0.6,0.1),
-		fg::vector3(0.2, 0.1, 0.6),
-		fg::vector3(0.5, 0.8, 0.1),
-		fg::vector3(0.2, 0.3, 0.8),
+		fg::vector3(0.1, 0.1, 0.1), // iron
+		fg::vector3(0.6, 0.6, 0.6),
+		fg::vector3(0.4, 0.4, 0.4), //iron?
 		fg::vector3(0.8, 0.8, 0.2),
-		fg::vector3(0.6, 0.0, 0.9),
+		fg::vector3(0.9, 0.9, 0.9), // air
 		fg::vector3(0.1, 0.4, 0.2),
-		fg::vector3(0.6, 0.9, 0.7),
-		fg::vector3(0.2, 0.1, 0.2),
-		fg::vector3(0.3, 0.8, 0.1) };
+		fg::vector3(0.6, 0.6, 0.6), // ne left coil
+		fg::vector3(0.6, 0.6, 0.6), // right coil
+		fg::vector3(0.6, 0.6, 0.6) };
 	for (size_t i{}; i<meshes.size(); ++i){
 		auto& meshview = meshes[i];
 		auto guide = guides[i] ? guides[i] : meshes[i];
@@ -116,8 +116,10 @@ void display(void)
 			for (size_t i = 0; i < _mesh.edgesCount(); ++i)
 			{
 				glLineWidth(1.0);
-				if (meshview->isBoundary(i))
+				if (meshview->isBoundary(i)) {
+					//glLineWidth(7.0);
 					glColor3f(1.0f, 0.2f, 0.2f);
+				}
 				else
 					//glColor3dv(colors[i].data);
 					glColor3f(0.2f, 0.2f, 0.2f);

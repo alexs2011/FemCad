@@ -14,6 +14,7 @@ namespace fg {
 		size_t adjustMeshIter;
 		//size_t i_flip;
 	public:
+		const MeshView2d& getBase() const { return base; }
 		virtual MeshedLine boundary(Mesh2::EdgeIndex index) const { return base.boundary(index); }
 		virtual const size_t boundary_size() const { return base.boundary_size(); }
 		virtual const Mesh2& mesh() const { return base.mesh(); }
@@ -36,6 +37,32 @@ namespace fg {
 				base.AddLine(meshes.back()->boundary(i));
 			}
 		}
+
+		void ForciblyFlip() {
+			std::vector<GHANDLE> edges;
+			edges.resize(0);
+			std::cout << "\nGoing flip\n";
+			for (size_t i{}; i < base.mesh().edgesCount(); i++)
+				edges.push_back(i);
+			std::cout << "Edges list = " << edges.size() << std::endl;
+			while (!edges.empty()) {
+				auto b = edges.back();
+				edges.pop_back();
+				base.Flip(b, edges);
+			}
+		}
+		/*void ForciblyCollapse() {
+			std::vector<GHANDLE> edges;
+			edges.resize(0);
+			for (size_t i{}; i < base.mesh().edgesCount(); i++)
+				edges.push_back(i);
+			while (!edges.empty()) {
+				auto b = edges.back();
+				edges.pop_back();
+				base.CollapseEdge(b);
+			}
+		}*/
+
 		void AddPoint(const vector3& point) {
 			base.AddPoint(point);
 		}
@@ -65,8 +92,13 @@ namespace fg {
 			AdjustMeshInitialization();
 			try {
 				size_t flag = 1;
-				while (flag)
+				size_t repeats = 100, pre_state = 0;
+				while (flag && repeats > 0)
 				{
+					if (pre_state != flag) {
+						repeats--;
+						pre_state = flag;
+					}
 					AdjustIteration(size, flag);
 					if (adjustMeshIter == edges_list.size() && flag != 0)
 						std::cout << "\nProgress: " << edges_list.size() << "        ";
@@ -85,6 +117,9 @@ namespace fg {
 		template<class T>
 		inline size_t AdjustIteration(const IElementSize<T>& size, size_t& mode)
 		{
+			/*if (mode == 0) {
+				AdjustMeshInitialization();
+			}*/
 			if (edges_list.empty() && edges_list_new.empty())
 			{
 				this->dbg_edge_to_be_processed = -1;
@@ -187,6 +222,7 @@ namespace fg {
 				return mode = 3;
 
 			}
+			return mode;
 			//if (adjustMeshIter == edges_list.size())
 			//{
 			//	for (; i_flip < base.mesh().edgesCount(); i_flip++)
@@ -283,23 +319,42 @@ namespace fg {
 			file << "$PhysicalNames\n";
 			auto s = materials.listSettings();
 			std::map<size_t, size_t> remap;
-			size_t p{};
-			file << s.size() << "\n";
+			std::map<std::string, std::pair<size_t, size_t>> material;
+			size_t p{1};
 			for (auto i : s) {
-				remap[p] = i.second->getID();
-				file << i.second->dim << ' ' << p << ' ' << std::string{ *i.second->getParameterByName("Name") } << std::endl;
-				p++;
+				//remap[i.second->getID()] = p;
+				try {
+					auto cur = std::string{ *i.second->getParameterByName("Name") };
+					if (material.count(cur)) {
+						if (cur == "") {
+							remap[i.second->getID()] = 0xFFFFFFFF;
+						}
+						else
+							remap[i.second->getID()] = material[cur].second;
+					}
+					else {
+						remap[i.second->getID()] = p;
+						material[cur] = std::make_pair(i.second->dim, p);
+						p++;
+					}
+				}
+				catch (const FGException&) {
+					remap[i.second->getID()] = 0xFFFFFFFF;
+				}
+			}
+			file << material.size() << "\n";
+			for (auto i : material) {
+				file << i.second.first << ' ' << i.second.second << " \"" << i.first << "\"" << std::endl;
 			}
 			file << "$EndPhysicalNames\n";
 
 			std::map<size_t, size_t> nodes;
 			std::map<size_t, std::pair<size_t, std::pair<size_t, size_t>>> edges;
 			std::map<size_t, std::pair<size_t, std::tuple<size_t, size_t, size_t>>> triangles;
-
 			p = 1U;
 			for (size_t i{}; i < _mesh.edgesCount(); ++i) {
 				auto s = base.materialId(i);
-				if (s == 0xFFFFFFFF) continue;
+				if (s == 0xFFFFFFFF || remap.count(s) == 0) continue;
 				else {
 					edges[p] = std::make_pair(remap[s], _mesh.edge(i));
 					p++;
@@ -307,23 +362,28 @@ namespace fg {
 			}
 			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
 				auto s = materials.materialId(_mesh.sample_triangle(i, fg::vector3{ .33333,.33333,.33333 }));
-				if (s == 0xFFFFFFFF) continue;
+				if (s == 0xFFFFFFFF || remap.count(s) == 0) continue;
 				else {
 					auto a = _mesh.triangleVertices(i);
+
 					triangles[p] = std::make_pair(remap[s], a);
-					nodes[std::get<0>(a) + 1] = std::get<0>(a);
-					nodes[std::get<1>(a) + 1] = std::get<1>(a);
-					nodes[std::get<2>(a) + 1] = std::get<2>(a);
+					nodes[std::get<0>(a)] = std::get<0>(a);
+					nodes[std::get<1>(a)] = std::get<1>(a);
+					nodes[std::get<2>(a)] = std::get<2>(a);
 					p++;
 				}
 			}
 
+			std::map<size_t, size_t> node_remap;
+			size_t node{1};
 
 			file << "$Nodes\n";
 			file << nodes.size() << std::endl;
 			for (auto i : nodes) {
 				auto& p = _mesh.point(i.second);
-				file << i.first << ' ' << p.x << ' ' << p.y << ' ' << p.z << std::endl;
+				node_remap[i.first] = node;
+				file << node << ' ' << p.x << ' ' << p.y << ' ' << p.z << std::endl;
+				node++;
 			}
 			file << "$EndNodes\n";
 			file << "$Elements\n";
@@ -332,14 +392,14 @@ namespace fg {
 			for (auto i : edges) {
 				file << i.first << ' ' << 1 << ' ' << 1 << ' ' 
 					<< i.second.first << ' ' 
-					<< i.second.second.first + 1 << ' ' << i.second.second.second + 1 << std::endl;
+					<< node_remap[i.second.second.first] << ' ' << node_remap[i.second.second.second] << std::endl;
 			}
 			for (auto i : triangles) {
 				file << i.first << ' ' << 2 << ' ' << 1 << ' '
 					<< i.second.first 
-					<< ' ' << std::get<0>(i.second.second) + 1 
-					<< ' ' << std::get<1>(i.second.second) + 1 
-					<< ' ' << std::get<2>(i.second.second) + 1 
+					<< ' ' << node_remap[std::get<0>(i.second.second)] 
+					<< ' ' << node_remap[std::get<1>(i.second.second)] 
+					<< ' ' << node_remap[std::get<2>(i.second.second)] 
 					<< std::endl;
 			}
 

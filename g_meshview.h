@@ -85,6 +85,9 @@ namespace fg {
 			std::map<double, Mesh2::EdgeIndex> edges;
 			_meshLineView(const ILine& l) : line{ l } {}
 			Mesh2::EdgeIndex get(double t) const {
+				if (edges.upper_bound(FG_EPS) == edges.begin()) {
+					throw;
+				}
 				t += FG_EPS;
 				auto s = edges.lower_bound(t);
 				s--;
@@ -138,6 +141,21 @@ namespace fg {
 					pos[i.second] = i.first;
 					edges[i.first] = i.second;
 				}
+			}
+			void collapse(Mesh2::EdgeIndex e, double point) {
+				auto p = pos[e];
+				auto next = edges.upper_bound(p+FG_EPS);
+				//next++;
+				if (next == edges.end()) {
+					pos.erase(e);
+					edges.erase(p);
+					return;
+				}
+				pos[next->second] = point;
+				edges[point] = next->second;
+				if (point != p) edges.erase(next->first);
+				edges.erase(p);
+				pos.erase(e);
 			}
 		};
 #ifndef _DEBUG_
@@ -282,11 +300,11 @@ namespace fg {
 			size_t el;
 
 #ifdef _DEBUG
-			auto tree = &_mesh.lookup();
-			std::ofstream file("lookup_tree.js", std::ofstream::out);
-			size_t initial_nodes_index = 0;
-			_mesh.printLookupTree(file, tree, initial_nodes_index);
-			file.close();
+			//auto tree = &_mesh.lookup();
+			//std::ofstream file("lookup_tree.js", std::ofstream::out);
+			//size_t initial_nodes_index = 0;
+			//_mesh.printLookupTree(file, tree, initial_nodes_index);
+			//file.close();
 #endif // _DEBUG
 
 			// определим, в какой тип элемента геометрии попала добавляемая точка и его хэндлер
@@ -305,7 +323,7 @@ namespace fg {
 						for (size_t j{}; j < new_edges.size(); j++) {
 							if (new_edges[j] == Mesh2::NotAnEdge) continue;
 #ifdef _DEBUG
-							std::cout << new_edges[j] << ", ";
+							//std::cout << new_edges[j] << ", ";
 #endif
 							auto& m = _mesh;
 							auto count = _mesh.intersect(static_cast<const EllipticSegment&>(geometry[i].line), new_edges[j], int_points);
@@ -824,8 +842,8 @@ namespace fg {
 			//for (size_t i{}; i < _mesh.triangles.size(); ++i) {
 			//}
 #endif
-#ifdef _DEBUG__
-#define _point_edges_test
+#ifndef _DEBUG__
+//#define _point_edges_test
 #ifdef _point_edges_test
 			for (size_t i{}; i < _mesh.PointEdges().size(); ++i) {
 				for (auto j : _mesh.PointEdges()[i]) {
@@ -852,7 +870,7 @@ namespace fg {
 				}
 			}
 #endif
-#define _double_edged_triangles_test
+//#define _double_edged_triangles_test
 #ifdef _double_edged_triangles_test
 			std::set<std::pair<size_t, size_t>> p;
 			for (size_t i{}; i < _mesh.edgesCount(); ++i) {
@@ -873,7 +891,7 @@ namespace fg {
 				}*/
 			}
 #endif
-#define _edge_triangles_test
+//#define _edge_triangles_test
 #ifdef _edge_triangles_test
 			for (size_t i{}; i < _mesh.TrianglesLength(); ++i) {
 				auto tr = _mesh.triangle(i);
@@ -891,7 +909,7 @@ namespace fg {
 				assert(false);
 			}
 #endif
-#define _edge_points_test
+//#define _edge_points_test
 #ifdef _edge_points_test
 			for (size_t i{}; i < _mesh.edges.size(); ++i) {
 				if (_mesh.edges[i].first == _mesh.edges[i].second) {
@@ -923,11 +941,12 @@ namespace fg {
 		std::vector<Mesh2::EdgeIndex> CollapseEdge(const Mesh2::EdgeIndex edge) {
 			if (_edgeGeometry[edge].size() > 1) return{};
 
-			if (isBoundary(edge)) {
+			/*if (isBoundary(edge)) {
 
 
 				return{};
-			}
+			}*/
+			auto g = _edgeGeometry[edge].begin();
 
 			static std::vector<Mesh2::EdgeIndex> result;
 			result.clear();
@@ -938,6 +957,15 @@ namespace fg {
 			for (auto i : _mesh.PointEdges()[p]) {
 				if (i == edge) continue;
 				if (isBoundary(i)) {
+					if (g != _edgeGeometry[edge].end()) {
+						bool skip = true;
+						for (auto j : _edgeGeometry[i]) {
+							if (*g != j) {
+								skip = false;
+							}
+						}
+						if (skip) continue;
+					}
 					first_is_edge = true;
 					break;
 				}
@@ -946,6 +974,15 @@ namespace fg {
 			for (auto i : _mesh.PointEdges()[p]) {
 				if (i == edge) continue;
 				if (isBoundary(i)) {
+					if (g != _edgeGeometry[edge].end()) {
+						bool skip = true;
+						for (auto j : _edgeGeometry[i]) {
+							if (*g != j) {
+								skip = false;
+							}
+						}
+						if (skip) continue;
+					}
 					second_is_edge = true;
 					break;
 				}
@@ -970,7 +1007,9 @@ namespace fg {
 			if (isnan(w.first)) return{};
 			double weight = 0.5 * (w.first + w.second);
 
-			auto check_weight_intersection = [&](size_t point, double wght) {
+
+
+			auto check_weight_intersection = [&](size_t point, const vector3& wpoint) {
 				std::vector<vector3> int_points;
 				auto intersect_boundary = [&](size_t ind, size_t bound) -> bool {
 					if (ind == bound) return false;
@@ -978,7 +1017,7 @@ namespace fg {
 					for (auto i : _edgeGeometry[bound]) {
 						const EllipticSegment* el = dynamic_cast<const EllipticSegment*>(&geometry[i].line);
 						if (el == nullptr) continue;
-						if (Intersector<ILine>::intersect_segment(*el, _mesh.point(edge_beg), _mesh.sample_edge(edge, wght), int_points) == 1)
+						if (Intersector<ILine>::intersect_segment(*el, _mesh.point(edge_beg), wpoint, int_points) == 1)
 							return true;
 					}
 					return false;
@@ -999,7 +1038,8 @@ namespace fg {
 			if (first_is_edge) {
 				if (w.first <= FG_EPS) {
 					weight = 0.0;
-					if (!check_weight_intersection(_mesh.edge(edge).first, weight))
+					auto wpoint = _mesh.sample_edge(edge, weight);
+					if (!check_weight_intersection(_mesh.edge(edge).first, wpoint))
 						return{};
 				}
 				else {
@@ -1009,7 +1049,8 @@ namespace fg {
 			if (second_is_edge) {
 				if (w.second >= 1.0 - FG_EPS) {
 					weight = 1.0;
-					if (!check_weight_intersection(_mesh.edge(edge).second, weight))
+					auto wpoint = _mesh.sample_edge(edge, weight);
+					if (!check_weight_intersection(_mesh.edge(edge).second, wpoint))
 						return{};
 				}
 				else {
@@ -1017,8 +1058,9 @@ namespace fg {
 				}
 			}
 
-			std::cout << _mesh.point(_mesh.edge(edge).first) << _mesh.point(_mesh.edge(edge).second) << std::endl;
-			std::cout << "w= " << weight << std::endl;
+
+			//std::cout << _mesh.point(_mesh.edge(edge).first) << _mesh.point(_mesh.edge(edge).second) << std::endl;
+			//std::cout << "w= " << weight << std::endl;
 
 			//if (w != 0.5) return{Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
 			//if(std::isnan(w)) return{ Mesh2::NotAnEdge,Mesh2::NotAnEdge ,Mesh2::NotAnEdge };
@@ -1026,19 +1068,49 @@ namespace fg {
 				std::cout << "Failed at start of " << edge << std::endl;
 				throw;
 			}
-			std::map<size_t, std::pair<std::vector<size_t>, size_t>> replaces;
-			auto replacer = [&](Mesh2::EdgeIndex old, Mesh2::EdgeIndex nw) {
-				if (replaces.count(nw) || _edgeGeometry[old].size() == 0) return;
-				replaces[nw] = std::make_pair(std::move(_edgeGeometry[old]), old);
+
+
+			std::map<size_t, size_t> replaces;
+			auto replacer = [&](Mesh2::EdgeIndex old, Mesh2::EdgeIndex nw, bool instant) {
+				if (instant && _edgeGeometry[nw].size() == 0) {
+					_edgeGeometry[nw] = std::move(_edgeGeometry[old]); //std::move(
+					for (auto j : _edgeGeometry[nw]) {
+						geometry[j].replace_edge(old, nw);
+					}
+				}
+				if (replaces.count(nw) /*|| _edgeGeometry[old].size() == 0*/) return;
+				auto theold = old;
+				while (replaces.count(theold)) {
+					auto preold = theold;
+					theold = replaces[theold];
+					replaces.erase(preold);
+				}
+				replaces[nw] = theold;// std::make_pair(std::move(_edgeGeometry[old]), old);
 			};
 
-			auto s = _mesh.collapseEdge(edge, replacer, weight);
+			std::array<size_t, 3> s;
+			if(g == _edgeGeometry[edge].end())
+				s = _mesh.collapseEdge(edge, replacer, weight);
+			else {
+				auto ee = _mesh.edge(edge);
+				auto p0 = geometry[*g].line.getParam(_mesh.point(ee.first));
+				auto p1 = geometry[*g].line.getParam(_mesh.point(ee.second));
+				auto ww = p0 * (1.0 - weight) + p1 * weight;
+				auto wpoint = geometry[*g].line.sample(ww);
+				if (!check_weight_intersection(_mesh.edge(edge).second, wpoint))
+					return{};
+				geometry[*g].collapse(edge, ww);
+				_edgeGeometry[edge].clear();
+				s = _mesh.collapseEdge(edge, replacer, wpoint);
+			}
 			bool collapsed = false;
 
+			auto cur = replaces.begin();
+
 			for (auto i = replaces.begin(); i != replaces.end(); ++i) {
-				_edgeGeometry[i->first] = i->second.first; //std::move(
+				_edgeGeometry[i->first] = std::move(_edgeGeometry[i->second]); //std::move(
 				for (auto j : _edgeGeometry[i->first]) {
-					geometry[j].replace_edge(i->second.second, i->first);
+					geometry[j].replace_edge(i->second, i->first);
 				}
 			}
 

@@ -14,6 +14,8 @@ std::function<void()> onSpacePress;
 std::function<void()> onWireframeToggle;
 std::function<void()> onExportPressed;
 std::function<void()> onGeometryAdd;
+std::function<void()> onForciblyFlip; 
+std::function<void()> onForciblyCollapse;
 class Drawer
 {
 private:
@@ -94,7 +96,8 @@ void set_perspective()
 	glLoadIdentity();
 	double xMin, xMax, yMin, yMax;
 	calcBoundaries(w, h, xChange, yChange, scale, xMin, xMax, yMin, yMax);
-	glOrtho(-1, 1, -1, 1, -2.0, 2.0);
+	//glOrtho(-w/200, w/200, -h/200, h/200, -2.0, 2.0);
+	glOrtho(xMin, xMax, yMin, yMax, -2.0, 2.0);
 }
 
 void processSpecialKeys(int key, int xx, int yy)
@@ -150,8 +153,13 @@ void processUsualKeys(unsigned char key, int xx, int yy)
 	case 'g':
 		onGeometryAdd();
 		break;
+	case 'f':
+		onForciblyFlip();
+		break;
+	case 'c':
+		onForciblyCollapse();
+		break;
 	}
-
 	set_perspective();
 	//glutPostRedisplay();
 }
